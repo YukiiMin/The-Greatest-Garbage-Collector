@@ -1,6 +1,9 @@
 ﻿using GarbageCollection.Business.Helpers;
 using GarbageCollection.Business.Interfaces;
+<<<<<<< HEAD
 using GarbageCollection.Common.DTOs;
+=======
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
 using GarbageCollection.Common.DTOs.Auth;
 using GarbageCollection.Common.DTOs.Auth.Local;
 using GarbageCollection.Common.Enums;
@@ -9,9 +12,12 @@ using GarbageCollection.Common.Models.Internal;
 using GarbageCollection.DataAccess.Interfaces;
 using Google.Apis.Auth;
 using Microsoft.Extensions.Logging;
+<<<<<<< HEAD
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+=======
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
 
 namespace GarbageCollection.Business.Services
 {
@@ -21,7 +27,10 @@ namespace GarbageCollection.Business.Services
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly JwtHelper _jwtHelper;
         private readonly ILogger<AuthService> _logger;
+<<<<<<< HEAD
         private TokenValidationParameters _refreshTokenValidationParams;
+=======
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
 
         public AuthService(
             IUserRepository userRepository,
@@ -158,6 +167,7 @@ namespace GarbageCollection.Business.Services
         {
             throw new NotImplementedException();
         }
+<<<<<<< HEAD
         public async Task<LicenseResult> IssueLicenseAsync(
             string? rawRefreshTokenJwt,
             CancellationToken ct = default)
@@ -303,5 +313,7 @@ namespace GarbageCollection.Business.Services
                 accessToken: newAccessToken,
                 refreshToken: newRefreshJwt);
         }
+=======
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
     }
 }

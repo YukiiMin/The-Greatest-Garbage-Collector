@@ -1,8 +1,15 @@
+<<<<<<< HEAD
 ﻿using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.Enums;
 using GarbageCollection.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+=======
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using GarbageCollection.Common.Enums;
+using GarbageCollection.Common.Models;
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -23,7 +30,11 @@ namespace GarbageCollection.DataAccess.Data
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<EmailOtp> EmailOtps => Set<EmailOtp>();
+<<<<<<< HEAD
         public DbSet<PasswordOtp> PasswordOtps => Set<PasswordOtp>();
+=======
+
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -303,6 +314,7 @@ namespace GarbageCollection.DataAccess.Data
 
                 e.HasIndex(o => o.Email);
             });
+<<<<<<< HEAD
             modelBuilder.Entity<PasswordOtp>(e =>
             {
                 e.ToTable("password_otp");
@@ -335,6 +347,8 @@ namespace GarbageCollection.DataAccess.Data
                  .HasPrincipalKey<User>(u => u.Email)
                  .OnDelete(DeleteBehavior.Cascade);
             });
+=======
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
         }
     }
 }

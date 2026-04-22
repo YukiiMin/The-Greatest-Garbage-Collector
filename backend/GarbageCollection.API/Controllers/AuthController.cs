@@ -20,19 +20,27 @@ namespace GarbageCollection.API.Controllers
         private readonly IVerifyEmailService _verifyEmailService;
         private readonly ILocalAuthService _localAuthService;
         private readonly ILocalLoginService _localLoginService;
+<<<<<<< HEAD
         private readonly IResendOtpService _resendOtpService;   
         private readonly IAccountVerificationService _accountVerificationService;
 
         public AuthController(IAuthService authService, IConfiguration configuration, IVerifyEmailService verifyEmailService, ILocalLoginService localLoginService, ILocalAuthService localAuthService, IResendOtpService resendOtpService, IAccountVerificationService accountVerificationService)
+=======
+
+        public AuthController(IAuthService authService, IConfiguration configuration, IVerifyEmailService verifyEmailService, ILocalLoginService localLoginService, ILocalAuthService localAuthService)
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
         {
             _authService = authService;
             _configuration = configuration;
             _verifyEmailService = verifyEmailService;
             _localLoginService = localLoginService;
             _localAuthService = localAuthService;
+<<<<<<< HEAD
             _resendOtpService = resendOtpService;
             _accountVerificationService = accountVerificationService;
 
+=======
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
         }
 
         /// <summary>
@@ -118,6 +126,7 @@ namespace GarbageCollection.API.Controllers
                 Expires = DateTime.UtcNow.AddDays(7)
             });
         }
+<<<<<<< HEAD
         [Authorize]
         [HttpGet("account-auth/verification")]
         [ProducesResponseType(typeof(ApiResponse<AccountVerificationResponseDto>), StatusCodes.Status200OK)]
@@ -158,6 +167,8 @@ namespace GarbageCollection.API.Controllers
                 "you has been verified"
                 ));
         }
+=======
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
         // ── POST /api/v1/auth/local-auth/login ───────────────────────────────
 
         /// <summary>
@@ -267,6 +278,7 @@ namespace GarbageCollection.API.Controllers
                 "account has been verified",
                 result.Payload!));
         }
+<<<<<<< HEAD
         [Authorize]
         [HttpPost("local-auth/email-otp")]
         [ProducesResponseType(typeof(ApiResponse<ResendOtpResponseDto>), StatusCodes.Status200OK)]
@@ -346,3 +358,10 @@ namespace GarbageCollection.API.Controllers
 }
 
 
+=======
+
+
+    }
+}
+
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0

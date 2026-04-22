@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 ﻿using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.Enums;
+=======
+﻿using GarbageCollection.Common.Enums;
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
 
 namespace GarbageCollection.Common.Models
 {
@@ -23,6 +27,9 @@ namespace GarbageCollection.Common.Models
 
         // Navigation
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+<<<<<<< HEAD
         public PasswordOtp? PasswordOtp { get; set; }
+=======
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
     }
 }

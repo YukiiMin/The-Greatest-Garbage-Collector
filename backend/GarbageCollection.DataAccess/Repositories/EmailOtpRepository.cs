@@ -45,6 +45,7 @@ namespace GarbageCollection.DataAccess.Repositories
                      .ExecuteUpdateAsync(
                          s => s.SetProperty(o => o.IsUsed, true), ct);
         }
+<<<<<<< HEAD
         public async Task UpdateAsync(
    Guid otpId,
    string newOtpCode,
@@ -63,6 +64,9 @@ namespace GarbageCollection.DataAccess.Repositories
                          .SetProperty(o => o.UpdatedAt, updatedAt),
                      ct);
         }
+=======
+
+>>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
         public Task SaveChangesAsync(CancellationToken ct = default)
             => _db.SaveChangesAsync(ct);
     }
