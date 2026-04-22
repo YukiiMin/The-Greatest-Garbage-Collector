@@ -1,42 +1,42 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
-  Leaf,
-  FileText,
-  MessageSquare,
   Award,
-  User,
+  FileText,
+  Leaf,
   LogOut,
-} from "lucide-react";
-import Report from "../components/Report/Report";
-import ReportID from "../components/Report/ReportID";
+  MessageSquare,
+  User,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import Report from '../components/Report/Report'
+import ReportID from '../components/Report/ReportID'
 
 const CitizenPage = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
-  const { reportId } = useParams();
-  const isDetailPage = !!reportId;
+  const { reportId } = useParams()
+  const isDetailPage = !!reportId
 
   useEffect(() => {
     if (isDetailPage) {
-      navigate(`/citizen/report/${reportId}`);
+      navigate(`/citizen/report/${reportId}`)
     }
-  }, []);
+  }, [isDetailPage, navigate, reportId])
 
-  const [openProfile, setOpenProfile] = useState(false);
-  const location = useLocation();
+  const [openProfile, setOpenProfile] = useState(false)
+  const location = useLocation()
 
   const user = {
-    name: "Nguyen Van A",
-    avatar: "A",
-  };
+    name: 'Nguyen Van A',
+    avatar: 'A',
+  }
 
   const menu = [
-    { id: "report", label: "Báo Cáo", icon: FileText },
-    { id: "complaint", label: "Phản Ánh", icon: MessageSquare },
-    { id: "reward", label: "Điểm", icon: Award },
-    { id: "profile", label: "Hồ Sơ", icon: User },
-  ];
+    { id: 'report', label: 'Báo Cáo', icon: FileText },
+    { id: 'complaint', label: 'Phản Ánh', icon: MessageSquare },
+    { id: 'reward', label: 'Điểm', icon: Award },
+    { id: 'profile', label: 'Hồ Sơ', icon: User },
+  ]
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -50,26 +50,26 @@ const CitizenPage = () => {
 
         <div className="flex-1 p-3 space-y-2">
           {menu.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname.includes(`/citizen/${item.id}`);
+            const Icon = item.icon
+            const isActive = location.pathname.includes(`/citizen/${item.id}`)
 
             return (
               <button
                 key={item.id}
                 onClick={() => {
-                  setOpenProfile(false);
-                  navigate(`/citizen/${item.id}`);
+                  setOpenProfile(false)
+                  navigate(`/citizen/${item.id}`)
                 }}
                 className={`w-full flex items-center gap-3 p-2 rounded-lg transition ${
                   isActive
-                    ? "bg-green-200 text-green-800"
-                    : "hover:bg-gray-100 text-white hover:text-green-800"
+                    ? 'bg-green-200 text-green-800'
+                    : 'hover:bg-gray-100 text-white hover:text-green-800'
                 }`}
               >
                 <Icon size={18} />
                 {item.label}
               </button>
-            );
+            )
           })}
         </div>
 
@@ -91,8 +91,8 @@ const CitizenPage = () => {
               <button
                 className="w-full flex items-center gap-2 p-2 hover:bg-gray-300"
                 onClick={() => {
-                  setOpenProfile(!openProfile);
-                  navigate("/citizen/profile");
+                  setOpenProfile(!openProfile)
+                  navigate('/citizen/profile')
                 }}
               >
                 <User size={16} />
@@ -109,34 +109,34 @@ const CitizenPage = () => {
 
       <nav className="fixed bottom-0 left-0 right-0 bg-green-950 border-t flex justify-around py-2 lg:hidden">
         {menu.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname.includes(`/citizen/${item.id}`);
+          const Icon = item.icon
+          const isActive = location.pathname.includes(`/citizen/${item.id}`)
 
           return (
             <button
               key={item.id}
               onClick={() => navigate(`/citizen/${item.id}`)}
               className={`flex flex-col items-center text-xs ${
-                isActive ? "text-green-400" : "text-white"
+                isActive ? 'text-green-400' : 'text-white'
               }`}
             >
               <Icon size={20} />
               {item.label}
             </button>
-          );
+          )
         })}
       </nav>
 
       <main className="flex-1 p-6">
-        {location.pathname.includes("/citizen/report") && !isDetailPage && (
+        {location.pathname.includes('/citizen/report') && !isDetailPage && (
           <Report />
         )}
-        {location.pathname.includes("/citizen/report") && isDetailPage && (
+        {location.pathname.includes('/citizen/report') && isDetailPage && (
           <ReportID />
         )}
       </main>
     </div>
-  );
-};
+  )
+}
 
-export default CitizenPage;
+export default CitizenPage
