@@ -1,4 +1,4 @@
-namespace GarbageCollection.Common.DTOs.WasteReport
+namespace GarbageCollection.Common.DTOs.CitizenReport
 {
     public class CitizenReportsResult
     {

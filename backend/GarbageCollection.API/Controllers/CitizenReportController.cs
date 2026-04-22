@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using GarbageCollection.Business.Helpers;
 using GarbageCollection.Common.DTOs;
-using GarbageCollection.Common.DTOs.WasteReport;
+using GarbageCollection.Common.DTOs.CitizenReport;
 using GarbageCollection.Common.Enums;
 using GarbageCollection.Business.Interfaces;
 using GarbageCollection.DataAccess.Interfaces;
@@ -42,7 +42,7 @@ namespace GarbageCollection.API.Controllers
             if (dto.Images.Count < 1)
                 return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_INPUT", "Vui lòng gửi ít nhất 1 ảnh."));
 
-            if (dto.Images.Count > 5)
+            if (dto.Images.Count > 3)
                 return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_INPUT", "Tối đa 5 ảnh mỗi lần gửi."));
 
             if (dto.Types.Count < 1)

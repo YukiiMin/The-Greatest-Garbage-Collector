@@ -1,6 +1,6 @@
 using GarbageCollection.Business.Interfaces;
 using GarbageCollection.Common.DTOs;
-using GarbageCollection.Common.DTOs.WasteReport;
+using GarbageCollection.Common.DTOs.CitizenReport;
 using GarbageCollection.Common.Enums;
 using GarbageCollection.Common.Exceptions;
 using GarbageCollection.Common.Models;
@@ -11,14 +11,14 @@ namespace GarbageCollection.Business.Services
     public class CitizenReportService : ICitizenReportService
     {
         private readonly ICitizenReportRepository _reportRepository;
-        private readonly ICloudinaryService _cloudinaryService;
+        private readonly IUploadImageService _uploadImageService;
 
         public CitizenReportService(
             ICitizenReportRepository reportRepository,
-            ICloudinaryService cloudinaryService)
+            IUploadImageService uploadImageService)
         {
             _reportRepository = reportRepository;
-            _cloudinaryService = cloudinaryService;
+            _uploadImageService = uploadImageService;
         }
 
         public async Task<CitizenReportResponseDto> CreateReportAsync(Guid userId, CreateCitizenReportDto dto)
@@ -26,7 +26,7 @@ namespace GarbageCollection.Business.Services
             if (dto.Types.Count > 4)
                 throw new ArgumentException("Tối đa 4 loại rác mỗi báo cáo.");
 
-            var imageUrls = await _cloudinaryService.UploadImagesAsync(dto.Images, "citizen-reports");
+            var imageUrls = await _uploadImageService.UploadImagesAsync(dto.Images, "citizen-reports");
 
             var report = new CitizenReport
             {
@@ -102,8 +102,8 @@ namespace GarbageCollection.Business.Services
 
             if (dto.Images != null && dto.Images.Count > 0)
             {
-                await _cloudinaryService.DeleteImagesAsync(report.CitizenImageUrls);
-                report.CitizenImageUrls = await _cloudinaryService.UploadImagesAsync(dto.Images, "citizen-reports");
+                await _uploadImageService.DeleteImagesAsync(report.CitizenImageUrls);
+                report.CitizenImageUrls = await _uploadImageService.UploadImagesAsync(dto.Images, "citizen-reports");
             }
 
             if (dto.Types != null && dto.Types.Count > 0)

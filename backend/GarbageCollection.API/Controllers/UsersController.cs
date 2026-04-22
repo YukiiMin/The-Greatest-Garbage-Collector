@@ -13,11 +13,16 @@ namespace GarbageCollection.API.Controllers
     {
         private readonly IUserService _userService;
         private readonly IUserRepository _userRepository;
+        private readonly IUploadImageService _uploadImageService;
 
-        public UsersController(IUserService userService, IUserRepository userRepository)
+        private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png"];
+        private const long MaxAvatarSizeBytes = 5 * 1024 * 1024; // 5 MB
+
+        public UsersController(IUserService userService, IUserRepository userRepository, IUploadImageService uploadImageService)
         {
-            _userService    = userService;
-            _userRepository = userRepository;
+            _userService        = userService;
+            _userRepository     = userRepository;
+            _uploadImageService = uploadImageService;
         }
 
         /// <summary>
@@ -41,18 +46,35 @@ namespace GarbageCollection.API.Controllers
         /// </summary>
         [Authorize]
         [HttpPut("/api/v1/users/profile")]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status413RequestEntityTooLarge)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
-        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileRequest request)
+        public async Task<IActionResult> UpdateProfile([FromForm] UpdateUserProfileRequest request, IFormFile? avatar)
         {
             if (!ModelState.IsValid)
                 return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_INPUT"));
 
+            string? avatarUrl = null;
+            if (avatar != null)
+            {
+                var ext = Path.GetExtension(avatar.FileName).ToLowerInvariant();
+                if (!AllowedImageExtensions.Contains(ext))
+                    return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_FILE_FORMAT",
+                        $"Định dạng không hợp lệ: {ext}. Chỉ chấp nhận jpg, jpeg, png."));
+
+                if (avatar.Length > MaxAvatarSizeBytes)
+                    return StatusCode(StatusCodes.Status413RequestEntityTooLarge,
+                        ApiResponse<object>.Fail("file too large", "FILE_TOO_LARGE", "Ảnh đại diện tối đa 5MB."));
+
+                avatarUrl = await _uploadImageService.UploadImageAsync(avatar, "avatars");
+            }
+
             var (userId, authErr) = await GetAuthorizedUserAsync();
             if (authErr is not null) return authErr;
 
-            var result = await _userService.UpdateProfileAsync(userId, request.Data);
+            var result = await _userService.UpdateProfileAsync(userId, request.Data, avatarUrl);
             return Ok(ApiResponse<UserProfileDto>.Ok(result, "update user profile successfully"));
         }
 

@@ -16,9 +16,5 @@ namespace GarbageCollection.Common.DTOs.User
 
         [MaxLength(512, ErrorMessage = "address must not exceed 512 characters")]
         public string? Address { get; set; }
-
-        [Url(ErrorMessage = "avatar_url must be a valid URL")]
-        [MaxLength(1024)]
-        public string? AvatarUrl { get; set; }
     }
 }

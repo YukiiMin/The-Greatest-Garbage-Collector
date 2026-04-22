@@ -10,16 +10,16 @@ namespace GarbageCollection.Business.Services
     {
         private readonly IComplaintRepository _complaintRepository;
         private readonly ICitizenReportRepository _reportRepository;
-        private readonly ICloudinaryService _cloudinaryService;
+        private readonly IUploadImageService _uploadImageService;
 
         public ComplaintService(
             IComplaintRepository complaintRepository,
             ICitizenReportRepository reportRepository,
-            ICloudinaryService cloudinaryService)
+            IUploadImageService uploadImageService)
         {
             _complaintRepository = complaintRepository;
             _reportRepository    = reportRepository;
-            _cloudinaryService   = cloudinaryService;
+            _uploadImageService   = uploadImageService;
         }
 
         public async Task<ComplaintResponseDto> CreateComplaintAsync(Guid citizenId, int reportId, CreateComplaintDto dto)
@@ -28,7 +28,7 @@ namespace GarbageCollection.Business.Services
                 ?? throw new KeyNotFoundException("report not found");
 
             var imageUrls = dto.Images.Count > 0
-                ? await _cloudinaryService.UploadImagesAsync(dto.Images, "complaints")
+                ? await _uploadImageService.UploadImagesAsync(dto.Images, "complaints")
                 : [];
 
             var complaint = new Complaint

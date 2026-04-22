@@ -8,15 +8,15 @@ namespace GarbageCollection.API.Controllers
     [Route("api/v1/[controller]")]
     public class ImageController : ControllerBase
     {
-        private readonly ICloudinaryService _cloudinaryService;
+        private readonly IUploadImageService _uploadImageService;
 
-        public ImageController(ICloudinaryService cloudinaryService)
+        public ImageController(IUploadImageService uploadImageService)
         {
-            _cloudinaryService = cloudinaryService;
+            _uploadImageService = uploadImageService;
         }
 
         /// <summary>
-        /// Upload tối đa 3 ảnh lên Cloudinary, trả về danh sách URL.
+        /// Upload ảnh lên Cloudinary, trả về danh sách URL.
         /// </summary>
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
@@ -27,10 +27,7 @@ namespace GarbageCollection.API.Controllers
             if (images == null || images.Count == 0)
                 return BadRequest(ApiResponse<object>.Fail("Vui lòng chọn ít nhất 1 ảnh.", "VALIDATION_ERROR"));
 
-            if (images.Count > 3)
-                return BadRequest(ApiResponse<object>.Fail("Tối đa 3 ảnh mỗi lần upload.", "VALIDATION_ERROR"));
-
-            var urls = await _cloudinaryService.UploadImagesAsync(images, "waste-reports");
+            var urls = await _uploadImageService.UploadImagesAsync(images, "waste-reports");
             return Ok(ApiResponse<List<string>>.Ok(urls));
         }
     }

@@ -7,11 +7,11 @@ using GarbageCollection.Business.Interfaces;
 
 namespace GarbageCollection.Business.Services
 {
-    public class CloudinaryService : ICloudinaryService
+    public class UploadImageService : IUploadImageService
     {
         private readonly Cloudinary _cloudinary;
 
-        public CloudinaryService(IOptions<CloudinarySettings> options)
+        public UploadImageService(IOptions<CloudinarySettings> options)
         {
             var settings = options.Value;
             var account = new Account(
@@ -25,13 +25,6 @@ namespace GarbageCollection.Business.Services
 
         public async Task<string> UploadImageAsync(IFormFile file, string folder = "waste-reports")
         {
-            if (file == null || file.Length == 0)
-                throw new ArgumentException("File ảnh không hợp lệ.");
-
-            var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
-            if (!allowedTypes.Contains(file.ContentType.ToLower()))
-                throw new ArgumentException("Chỉ chấp nhận ảnh định dạng JPG, PNG hoặc WEBP.");
-
             await using var stream = file.OpenReadStream();
 
             var uploadParams = new ImageUploadParams
@@ -58,12 +51,6 @@ namespace GarbageCollection.Business.Services
 
         public async Task<List<string>> UploadImagesAsync(IList<IFormFile> files, string folder = "waste-reports")
         {
-            if (files == null || files.Count == 0)
-                throw new ArgumentException("Vui lòng chọn ít nhất 1 ảnh.");
-
-            if (files.Count > 3)
-                throw new ArgumentException("Tối đa 3 ảnh mỗi báo cáo.");
-
             var uploadTasks = files.Select(f => UploadImageAsync(f, folder));
             var urls = await Task.WhenAll(uploadTasks);
             return [.. urls];

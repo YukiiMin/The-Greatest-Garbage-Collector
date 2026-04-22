@@ -1,9 +1,6 @@
 
-﻿using GarbageCollection.Common.DTOs;
+using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.Enums;
-
-﻿using GarbageCollection.Common.Enums;
-
 
 namespace GarbageCollection.Common.Models
 {
