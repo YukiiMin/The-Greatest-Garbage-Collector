@@ -1,0 +1,41 @@
+name: Backend CI (.NET 8)
+
+on:
+  pull_request:
+    branches: [ "main", "develop", "BE" ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  push:
+    branches: [ "main", "develop", "BE" ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-build:
+    name: Build & Check Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+          cache-dependency-path: 'backend/**/*.csproj'
+
+      - name: Restore dependencies
+        run: dotnet restore GarbageCollection.sln
+
+      - name: Build
+        run: dotnet build GarbageCollection.sln --no-restore -c Release
