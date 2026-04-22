@@ -154,6 +154,8 @@ builder.Services.AddScoped<ILocalAuthService,   LocalAuthService>();
 builder.Services.AddScoped<ILocalLoginService,  LocalLoginService>();
 builder.Services.AddScoped<IVerifyEmailService, VerifyEmailService>();
 builder.Services.AddScoped<IEmailService,       SmtpEmailService>();
+builder.Services.AddScoped<IResendOtpService, ResendOtpService>();
+builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
 
 // ── 7. Controllers + JSON ──────────────────────────────────────────────────────
 builder.Services.AddControllers()

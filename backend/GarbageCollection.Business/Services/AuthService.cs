@@ -1,5 +1,6 @@
 ﻿using GarbageCollection.Business.Helpers;
 using GarbageCollection.Business.Interfaces;
+using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.DTOs.Auth;
 using GarbageCollection.Common.DTOs.Auth.Local;
 using GarbageCollection.Common.Enums;
@@ -8,6 +9,9 @@ using GarbageCollection.Common.Models.Internal;
 using GarbageCollection.DataAccess.Interfaces;
 using Google.Apis.Auth;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace GarbageCollection.Business.Services
 {
@@ -17,6 +21,7 @@ namespace GarbageCollection.Business.Services
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly JwtHelper _jwtHelper;
         private readonly ILogger<AuthService> _logger;
+        private TokenValidationParameters _refreshTokenValidationParams;
 
         public AuthService(
             IUserRepository userRepository,
@@ -152,6 +157,151 @@ namespace GarbageCollection.Business.Services
         public Task RegisterAsync(LocalRegisterRequestDto data)
         {
             throw new NotImplementedException();
+        }
+        public async Task<LicenseResult> IssueLicenseAsync(
+            string? rawRefreshTokenJwt,
+            CancellationToken ct = default)
+        {
+            // ── STEP 1: Cookie missing ────────────────────────────────────────
+            if (string.IsNullOrWhiteSpace(rawRefreshTokenJwt))
+            {
+                return LicenseResult.Failure(
+                    statusCode: 401,
+                    message: "no license",
+                    code: "NO_REFRESH_TOKEN",
+                    description: "Refresh token missing.");
+            }
+
+            // ── STEP 2: Validate JWT structure + extract raw token claim ──────
+            // ValidateLifetime = false so an expired JWT still lets us reach step 5
+            // and return 422 (expired) instead of 401 (invalid).
+            ClaimsPrincipal principal;
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                principal = handler.ValidateToken(
+                    rawRefreshTokenJwt,
+                    _refreshTokenValidationParams,
+                    out _);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Refresh token JWT validation failed.");
+                return LicenseResult.Failure(
+                    statusCode: 401,
+                    message: "no license",
+                    code: "INVALID_REFRESH_TOKEN",
+                    description: "Refresh token is invalid or has been tampered with.");
+            }
+
+            // Extract the raw token value embedded as a claim in the JWT payload.
+            var rawToken = principal.FindFirstValue("refresh_token");
+            if (string.IsNullOrWhiteSpace(rawToken))
+            {
+                _logger.LogWarning("Refresh token JWT is missing 'refresh_token' claim.");
+                return LicenseResult.Failure(
+                    statusCode: 401,
+                    message: "no license",
+                    code: "INVALID_REFRESH_TOKEN",
+                    description: "Refresh token payload is malformed.");
+            }
+
+            // ── STEP 3: Hash the raw token and look up the DB record ──────────
+            var tokenHash = JwtHelper.HashToken(rawToken);
+            var storedToken = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash, ct);
+
+            if (storedToken is null)
+            {
+                _logger.LogWarning("Refresh token hash not found in DB.");
+                return LicenseResult.Failure(
+                    statusCode: 401,
+                    message: "no license",
+                    code: "INVALID_REFRESH_TOKEN",
+                    description: "Refresh token is not recognised.");
+            }
+
+            // ── STEP 4: Reuse detection — token already revoked ───────────────
+            // A revoked token being presented is a security event: it means either
+            // a previous rotation wasn't completed (client bug) or the token was
+            // stolen and already used by an attacker. Invalidate all tokens and
+            // bump login_term so every outstanding access token is also invalidated.
+            if (storedToken.IsRevoked)
+            {
+                _logger.LogWarning(
+                    "SECURITY EVENT — refresh token reuse detected for user {UserId}.",
+                    storedToken.UserId);
+
+                // Revoke ALL tokens for the user (parallel sessions included).
+                await _refreshTokenRepository.RevokeAllForUserAsync(storedToken.UserId, ct);
+
+                // Increment login_term → all existing access tokens become stale
+                // and will fail the login_term check in AccountVerificationService.
+                await _userRepository.IncrementLoginTermAsync(storedToken.UserId, ct);
+
+                return LicenseResult.Failure(
+                    statusCode: 409,
+                    message: "abnormal detection",
+                    code: "TOKEN_REUSE",
+                    description: "Refresh token reuse detected. All sessions have been terminated.");
+            }
+
+            // ── STEP 5: Expiry check (use DB ExpiresAt — authoritative) ───────
+            if (DateTime.UtcNow > storedToken.ExpiresAt)
+            {
+                _logger.LogInformation(
+                    "Refresh token expired for {Email}. ExpiresAt: {ExpiresAt}.",
+                    storedToken.Email, storedToken.ExpiresAt);
+
+                return LicenseResult.Failure(
+                    statusCode: 422,
+                    message: "expired",
+                    code: "TOKEN_EXPIRED",
+                    description: "Refresh token has expired. Please log in again.");
+            }
+
+            // The user profile was eagerly loaded in GetByTokenHashAsync.
+            var user = storedToken.User;
+
+            // ── STEP 6: Rotation — generate a new token pair ──────────────────
+            var (newAccessToken, _) =
+                _jwtHelper.GenerateAccessToken(user.Email, user.FullName, user.LoginTerm);
+            var (newRawRefresh, newRefreshJwt, newRefreshExpiry) =
+                _jwtHelper.GenerateRefreshToken(user.Email);
+
+            // ── STEP 7: Revoke the consumed token (single-use enforcement) ────
+            // RevokeByIdAsync commits immediately via ExecuteUpdateAsync.
+            await _refreshTokenRepository.RevokeByIdAsync(storedToken.Id, ct);
+
+            // ── STEP 8: Persist the new refresh token (hashed, never raw) ─────
+            var newTokenHash = JwtHelper.HashToken(newRawRefresh);
+            var newRefreshEntity = new RefreshToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                TokenHash = newTokenHash,
+                Email = user.Email,
+                ExpiresAt = newRefreshExpiry,
+                IsRevoked = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _refreshTokenRepository.CreateAsync(newRefreshEntity, ct);
+            await _refreshTokenRepository.SaveChangesAsync(ct);
+
+            _logger.LogInformation(
+                "Token rotation completed successfully for {Email}.", user.Email);
+
+            // ── STEP 9: Return success — tokens go via cookies (controller) ───
+            return LicenseResult.Ok(
+                payload: new LicenseResponseDto
+                {
+                    Email = user.Email,
+                    FullName = user.FullName,
+                    AvatarUrl = user.AvatarUrl,
+                    Address = user.Address
+                },
+                accessToken: newAccessToken,
+                refreshToken: newRefreshJwt);
         }
     }
 }

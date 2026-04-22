@@ -219,6 +219,9 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<int>("Count")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -242,6 +245,9 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasMaxLength(6)
                         .HasColumnType("character varying(6)")
                         .HasColumnName("otp_code");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

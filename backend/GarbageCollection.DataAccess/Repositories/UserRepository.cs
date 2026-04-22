@@ -29,6 +29,14 @@ namespace GarbageCollection.DataAccess.Repositories
         public Task<User?> GetByGoogleIdAsync(string googleId, CancellationToken ct = default)
             => _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.GoogleId == googleId, ct);
 
+        public async Task IncrementLoginTermAsync(Guid userId, CancellationToken ct = default)
+        {
+            await _db.Users
+                     .Where(u => u.Id == userId)
+                     .ExecuteUpdateAsync(
+                         s => s.SetProperty(u => u.LoginTerm, u => u.LoginTerm + 1),
+                     ct);
+        }
         public async Task<User> CreateAsync(User user, CancellationToken ct = default)
         {
             await _db.Users.AddAsync(user, ct);
