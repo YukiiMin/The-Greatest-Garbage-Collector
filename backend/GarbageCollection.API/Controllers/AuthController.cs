@@ -21,13 +21,23 @@ namespace GarbageCollection.API.Controllers
         private readonly ILocalAuthService _localAuthService;
         private readonly ILocalLoginService _localLoginService;
 
-        public AuthController(IAuthService authService, IConfiguration configuration, IVerifyEmailService verifyEmailService, ILocalLoginService localLoginService, ILocalAuthService localAuthService)
+        private readonly IResendOtpService _resendOtpService;   
+        private readonly IAccountVerificationService _accountVerificationService;
+
+        public AuthController(IAuthService authService, IConfiguration configuration, IVerifyEmailService verifyEmailService, ILocalLoginService localLoginService, ILocalAuthService localAuthService, IResendOtpService resendOtpService, IAccountVerificationService accountVerificationService)
+
+
         {
             _authService = authService;
             _configuration = configuration;
             _verifyEmailService = verifyEmailService;
             _localLoginService = localLoginService;
             _localAuthService = localAuthService;
+
+            _resendOtpService = resendOtpService;
+            _accountVerificationService = accountVerificationService;
+
+
         }
 
         /// <summary>
@@ -113,6 +123,48 @@ namespace GarbageCollection.API.Controllers
                 Expires = DateTime.UtcNow.AddDays(7)
             });
         }
+
+        [Authorize]
+        [HttpGet("account-auth/verification")]
+        [ProducesResponseType(typeof(ApiResponse<AccountVerificationResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> AccountVerification(CancellationToken ct)
+        {
+            // ── Extract validated claims (HTTP / controller concern) ───────────
+            // [Authorize] + JWT middleware guarantee these claims are authentic;
+            // we only need to check for their presence, not re-validate the token.
+            var tokenEmail = User.GetEmail();
+            if (tokenEmail is null)
+            {
+                return Unauthorized(ApiResponse<object>.Fail(
+                    "failed verification",
+                    "UNAUTHORIZED",
+                    "Access token does not contain a valid email claim."));
+            }
+
+            var tokenLoginTerm = User.GetLoginTerm();
+
+            // ── Delegate ALL business logic to the service ────────────────────
+            var result = await _accountVerificationService
+                .VerifyAccountAsync(tokenEmail, tokenLoginTerm, ct);
+
+            if (!result.Succeeded)
+            {
+                return StatusCode(
+                    result.HttpStatusCode,
+                    ApiResponse<object>.Fail(
+                        result.FailMessage!,
+                        result.FailCode!,
+                        result.FailDescription!));
+            }
+
+            return Ok(ApiResponse<AccountVerificationResponseDto>.Ok(
+                result.Payload!,
+                "you has been verified"
+                ));
+        }
+
         // ── POST /api/v1/auth/local-auth/login ───────────────────────────────
 
         /// <summary>
@@ -223,7 +275,89 @@ namespace GarbageCollection.API.Controllers
                 result.Payload!));
         }
 
+        [Authorize]
+        [HttpPost("local-auth/email-otp")]
+        [ProducesResponseType(typeof(ApiResponse<ResendOtpResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status429TooManyRequests)]
+        public async Task<IActionResult> ResendOtp(
+            [FromBody] ResendOtpRequestWrapper request,
+            CancellationToken ct)
+        {
+            // ── Shape guard ───────────────────────────────────────────────────
+            if (request?.Data is null)
+            {
+                return Unauthorized(ApiResponse<object>.Fail(
+                    "data is unvalid",
+                    "INVALID_DATA",
+                    "Request body must contain a 'data' object with an email field."));
+            }
 
+            // ── Extract validated JWT claim (HTTP concern — controller only) ───
+            // [Authorize] + middleware guarantee the token is authentic before we reach here.
+            var tokenEmail = User.GetEmail();
+            if (tokenEmail is null)
+            {
+                return Unauthorized(ApiResponse<object>.Fail(
+                    "data is unvalid",
+                    "UNAUTHORIZED",
+                    "Access token does not contain a valid email claim."));
+            }
+
+            // ── Delegate ALL business logic to the service ────────────────────
+            var result = await _resendOtpService.ResendOtpAsync(request.Data, tokenEmail, ct);
+
+            if (!result.Succeeded)
+            {
+                return StatusCode(
+                    result.HttpStatusCode,
+                    ApiResponse<object>.Fail(result.FailMessage!, result.FailCode!, result.FailDescription!));
+            }
+
+            return Ok(ApiResponse<ResendOtpResponseDto>.Ok(result.Payload!, "otp has been created"));
+        }
+        [HttpGet("account-auth/license")]
+        [ProducesResponseType(typeof(ApiResponse<LicenseResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> License(CancellationToken ct)
+        {
+            // ── Read the raw refresh token JWT from the HttpOnly cookie ────────
+            // This is the only HTTP concern in this action.
+            // The cookie value is the signed JWT produced by JwtHelper.GenerateRefreshToken.
+            // Null means the cookie is absent (step 1 of the spec).
+            Request.Cookies.TryGetValue("refreshToken", out var refreshTokenJwt);
+
+            // ── Delegate ALL logic to the service ─────────────────────────────
+            var result = await _authService.IssueLicenseAsync(refreshTokenJwt, ct);
+
+            if (!result.Succeeded)
+            {
+                return StatusCode(
+                    result.HttpStatusCode,
+                    ApiResponse<object>.Fail(result.FailMessage!, result.FailCode!, result.FailDescription!));
+            }
+
+            // ── Set new HttpOnly cookies (HTTP concern — controller only) ──────
+            CookieHelper.SetAuthCookies(
+                Response, result.AccessToken!, result.RefreshToken!, _configuration);
+
+            return Ok(ApiResponse<LicenseResponseDto>.Success(
+                "you has supplied license",
+                result.Payload!));
+        }
     }
+
 }
+
+
+
+
+
+    
+
+
 

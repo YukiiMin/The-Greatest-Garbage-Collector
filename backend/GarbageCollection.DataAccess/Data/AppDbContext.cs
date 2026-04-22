@@ -1,3 +1,9 @@
+
+﻿using GarbageCollection.Common.DTOs;
+using GarbageCollection.Common.Enums;
+using GarbageCollection.Common.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using GarbageCollection.Common.Enums;
@@ -22,6 +28,10 @@ namespace GarbageCollection.DataAccess.Data
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<EmailOtp> EmailOtps => Set<EmailOtp>();
+
+        public DbSet<PasswordOtp> PasswordOtps => Set<PasswordOtp>();
+
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -302,6 +312,40 @@ namespace GarbageCollection.DataAccess.Data
 
                 e.HasIndex(o => o.Email);
             });
+
+            modelBuilder.Entity<PasswordOtp>(e =>
+            {
+                e.ToTable("password_otp");
+
+                // Email is the primary key per the DB schema.
+                // One row per user — upserted on every password-reset request.
+                e.HasKey(o => o.Email);
+
+                e.Property(o => o.Email)
+                 .HasColumnName("email")
+                 .IsRequired()
+                 .HasMaxLength(255);
+
+                // OtpCode stores a BCrypt hash (≈60 chars) — never raw plain-text.
+                e.Property(o => o.OtpCode)
+                 .HasColumnName("otp_code")
+                 .IsRequired()
+                 .HasMaxLength(72);
+
+                e.Property(o => o.ExpiresAt).HasColumnName("expires_at");
+                e.Property(o => o.IsUsed).HasColumnName("is_used");
+                e.Property(o => o.Count).HasColumnName("count");
+                e.Property(o => o.CreatedAt).HasColumnName("created_at");
+                e.Property(o => o.LastUpdatedAt).HasColumnName("last_updated_at");
+
+                // FK: password_otp.email → users.email  ON DELETE CASCADE
+                e.HasOne(o => o.User)
+                 .WithOne(u => u.PasswordOtp)
+                 .HasForeignKey<PasswordOtp>(o => o.Email)
+                 .HasPrincipalKey<User>(u => u.Email)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
+
         }
     }
 }

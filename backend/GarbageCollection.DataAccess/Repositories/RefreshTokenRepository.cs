@@ -31,6 +31,20 @@ namespace GarbageCollection.DataAccess.Repositories
                      .ExecuteUpdateAsync(s => s.SetProperty(rt => rt.IsRevoked, true), ct);
         }
 
+        public Task<RefreshToken?> GetByTokenHashAsync(string tokenHash, CancellationToken ct = default)
+            => _db.RefreshTokens
+                  .AsNoTracking()
+                  .Include(rt => rt.User)
+                  .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash, ct);
+        public async Task RevokeByIdAsync(Guid tokenId, CancellationToken ct = default)
+        {
+            await _db.RefreshTokens
+                     .Where(rt => rt.Id == tokenId)
+                     .ExecuteUpdateAsync(
+                         s => s.SetProperty(rt => rt.IsRevoked, true), ct);
+        }
+
+
         public Task SaveChangesAsync(CancellationToken ct = default)
             => _db.SaveChangesAsync(ct);
     }

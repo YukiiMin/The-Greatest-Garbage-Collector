@@ -46,6 +46,25 @@ namespace GarbageCollection.DataAccess.Repositories
                          s => s.SetProperty(o => o.IsUsed, true), ct);
         }
 
+        public async Task UpdateAsync(
+   Guid otpId,
+   string newOtpCode,
+   DateTime newExpiresAt,
+   int newCount,
+   DateTime updatedAt,
+   CancellationToken ct = default)
+        {
+            await _db.EmailOtps
+                     .Where(o => o.Id == otpId)
+                     .ExecuteUpdateAsync(s => s
+                         .SetProperty(o => o.OtpCode, newOtpCode)
+                         .SetProperty(o => o.ExpiresAt, newExpiresAt)
+                         .SetProperty(o => o.IsUsed, false)
+                         .SetProperty(o => o.Count, newCount)
+                         .SetProperty(o => o.UpdatedAt, updatedAt),
+                     ct);
+        }
+
         public Task SaveChangesAsync(CancellationToken ct = default)
             => _db.SaveChangesAsync(ct);
     }

@@ -72,6 +72,36 @@ namespace GarbageCollection.Business.Helpers
             return (rawToken, jwt, expiresAt);
         }
 
+        public ClaimsPrincipal? ValidateToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_secretKey);
+
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = _issuer,
+
+                    ValidateAudience = true,
+                    ValidAudience = _audience,
+
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
+                }, out SecurityToken validatedToken);
+
+                return principal;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         // ── SHA-256 hash ──────────────────────────────────────────────────────
 
         public static string HashToken(string rawToken)

@@ -14,5 +14,9 @@ namespace GarbageCollection.Common.Models
         public DateTime ExpiresAt { get; set; }
         public bool IsUsed { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public int Count { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+
     }
 }
