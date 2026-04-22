@@ -4,12 +4,6 @@ namespace GarbageCollection.Common.DTOs.User
 {
     public class UpdateUserProfileRequest
     {
-        [Required]
-        public UpdateUserProfileData Data { get; set; } = new();
-    }
-
-    public class UpdateUserProfileData
-    {
         [Required(ErrorMessage = "fullname is required")]
         [MaxLength(256, ErrorMessage = "fullname must not exceed 256 characters")]
         public string Fullname { get; set; } = string.Empty;

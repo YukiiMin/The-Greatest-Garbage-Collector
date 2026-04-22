@@ -3,6 +3,7 @@ using System;
 using GarbageCollection.DataAccess.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GarbageCollection.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260422164507_AddUserPointsAndComplaintMessages")]
+    partial class AddUserPointsAndComplaintMessages
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -69,8 +72,7 @@ namespace GarbageCollection.DataAccess.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime?>("AssignAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("assign_at");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal?>("Capacity")
                         .HasColumnType("decimal(10,2)");
@@ -79,17 +81,12 @@ namespace GarbageCollection.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("CollectedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("collected_at");
-
                     b.Property<string>("CollectorImageUrls")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("CompleteAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("complete_at");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -105,16 +102,11 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("ReportAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("report_at");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ReportNote")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime?>("StartCollectingAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("start_collecting_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -131,8 +123,7 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("citizen_id");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 

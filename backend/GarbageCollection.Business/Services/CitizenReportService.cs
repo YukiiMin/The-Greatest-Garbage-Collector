@@ -130,6 +130,10 @@ namespace GarbageCollection.Business.Services
 
             if (newStatus == ReportStatus.Assigned)
                 report.AssignAt = DateTime.UtcNow;
+            else if (newStatus == ReportStatus.Processing)
+                report.StartCollectingAt = DateTime.UtcNow;
+            else if (newStatus == ReportStatus.Collected)
+                report.CollectedAt = DateTime.UtcNow;
             else if (newStatus == ReportStatus.Completed)
                 report.CompleteAt = DateTime.UtcNow;
 
@@ -141,9 +145,11 @@ namespace GarbageCollection.Business.Services
         {
             var allowed = new Dictionary<ReportStatus, ReportStatus[]>
             {
-                { ReportStatus.Pending,   [ReportStatus.Assigned, ReportStatus.Rejected, ReportStatus.Cancel] },
-                { ReportStatus.Assigned,  [ReportStatus.Collected, ReportStatus.Failed, ReportStatus.Cancel]  },
-                { ReportStatus.Collected, [ReportStatus.Completed]                                            },
+                { ReportStatus.Pending,    [ReportStatus.Queue,      ReportStatus.Rejected, ReportStatus.Cancel] },
+                { ReportStatus.Queue,      [ReportStatus.Assigned,   ReportStatus.Rejected, ReportStatus.Cancel] },
+                { ReportStatus.Assigned,   [ReportStatus.Processing, ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.Processing, [ReportStatus.Collected,  ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.Collected,  [ReportStatus.Completed]                                              },
             };
 
             if (!allowed.TryGetValue(current, out var allowedNext) || !allowedNext.Contains(next))
@@ -170,6 +176,8 @@ namespace GarbageCollection.Business.Services
             TeamId             = report.TeamId,
             ReportNote         = report.ReportNote,
             AssignAt           = report.AssignAt,
+            StartCollectingAt  = report.StartCollectingAt,
+            CollectedAt        = report.CollectedAt,
             ReportAt           = report.ReportAt,
             CollectorImageUrls = report.CollectorImageUrls,
             CompleteAt         = report.CompleteAt,
