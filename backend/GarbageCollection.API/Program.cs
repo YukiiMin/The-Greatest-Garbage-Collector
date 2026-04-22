@@ -145,7 +145,7 @@ builder.Services.AddScoped<IRefreshTokenRepository,  RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailOtpRepository,      EmailOtpRepository>();
 
 // Services
-builder.Services.AddScoped<ICloudinaryService,  CloudinaryService>();
+builder.Services.AddScoped<IUploadImageService,  UploadImageService>();
 builder.Services.AddScoped<ICitizenReportService, CitizenReportService>();
 builder.Services.AddScoped<IComplaintService,   ComplaintService>();
 builder.Services.AddScoped<IUserService,        UserService>();

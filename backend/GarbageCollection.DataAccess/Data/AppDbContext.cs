@@ -1,13 +1,8 @@
-
-﻿using GarbageCollection.Common.DTOs;
+using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.Enums;
 using GarbageCollection.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using GarbageCollection.Common.Enums;
-using GarbageCollection.Common.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
