@@ -25,7 +25,7 @@ namespace GarbageCollection.Business.Services
             return MapToDto(user);
         }
 
-        public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserProfileData data, string? avatarUrl = null)
+        public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest data, string? avatarUrl = null)
         {
             var user = await _userRepository.GetByIdTrackedAsync(userId)
                 ?? throw new KeyNotFoundException("account not found");

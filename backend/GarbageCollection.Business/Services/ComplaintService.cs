@@ -81,6 +81,34 @@ namespace GarbageCollection.Business.Services
             return MapToResponse(complaint);
         }
 
+        public async Task SendMessageAsync(Guid citizenId, int reportId, int complaintId, string message, CancellationToken ct = default)
+        {
+            _ = await _reportRepository.GetByIdAsync(reportId)
+                ?? throw new KeyNotFoundException("report not found");
+
+            var complaint = await _complaintRepository.GetByIdAsync(complaintId)
+                ?? throw new KeyNotFoundException("complaint not found");
+
+            if (complaint.ReportId != reportId)
+                throw new KeyNotFoundException("complaint not found");
+
+            if (complaint.CitizenId != citizenId)
+                throw new UnauthorizedAccessException("forbidden");
+
+            if (complaint.Status == ComplaintStatus.Approved || complaint.Status == ComplaintStatus.Rejected)
+                throw new InvalidOperationException("complaint already resolved");
+
+            var msg = new ComplaintMessage
+            {
+                Sender  = "citizen",
+                Email   = complaint.Citizen?.Email ?? string.Empty,
+                Message = message,
+                Time    = DateTime.UtcNow
+            };
+
+            await _complaintRepository.AppendMessageAsync(complaintId, msg, ct);
+        }
+
         private static ComplaintResponseDto MapToResponse(Complaint c) => new()
         {
             Id            = c.Id,

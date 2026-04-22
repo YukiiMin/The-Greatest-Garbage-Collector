@@ -2,6 +2,8 @@ using GarbageCollection.Common.Models;
 using GarbageCollection.DataAccess.Data;
 using GarbageCollection.DataAccess.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using System.Text.Json;
 
 namespace GarbageCollection.DataAccess.Repositories
 {
@@ -23,6 +25,7 @@ namespace GarbageCollection.DataAccess.Repositories
 
         public async Task<Complaint?> GetByIdAsync(int id)
             => await _context.Complaints
+                .Include(c => c.Citizen)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
         public async Task<Complaint> UpdateAsync(Complaint complaint)
@@ -45,6 +48,15 @@ namespace GarbageCollection.DataAccess.Repositories
                 .ToListAsync();
 
             return (items, total);
+        }
+
+        public async Task AppendMessageAsync(int complaintId, ComplaintMessage message, CancellationToken ct = default)
+        {
+            var json = JsonSerializer.Serialize(new[] { message });
+            await _context.Database.ExecuteSqlRawAsync(
+                "UPDATE complaints SET messages = COALESCE(messages, '[]'::jsonb) || @msg::jsonb WHERE id = @id",
+                new NpgsqlParameter("@msg", json),
+                new NpgsqlParameter("@id", complaintId));
         }
     }
 }

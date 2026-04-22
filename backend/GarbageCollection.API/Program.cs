@@ -143,6 +143,7 @@ builder.Services.AddScoped<ITeamRepository,          TeamRepository>();
 builder.Services.AddScoped<IUserRepository,          UserRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository,  RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailOtpRepository,      EmailOtpRepository>();
+builder.Services.AddScoped<IUserPointsRepository,    UserPointsRepository>();
 
 // Services
 builder.Services.AddScoped<IUploadImageService,  UploadImageService>();
@@ -154,6 +155,7 @@ builder.Services.AddScoped<ILocalAuthService,   LocalAuthService>();
 builder.Services.AddScoped<ILocalLoginService,  LocalLoginService>();
 builder.Services.AddScoped<IVerifyEmailService, VerifyEmailService>();
 builder.Services.AddScoped<IEmailService,       SmtpEmailService>();
+builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 
 builder.Services.AddScoped<IResendOtpService, ResendOtpService>();
 builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
@@ -278,6 +280,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
 app.Run();

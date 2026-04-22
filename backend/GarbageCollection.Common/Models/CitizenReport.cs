@@ -14,6 +14,16 @@ namespace GarbageCollection.Common.Models
 
         public string? Description { get; set; }
 
+        public decimal? GpsLat { get; set; }
+
+        public decimal? GpsLng { get; set; }
+
+        public string? Address { get; set; }
+
+        public bool PriorityFlag { get; set; } = false;
+
+        public int? RouteOrder { get; set; }
+
         public ReportStatus Status { get; set; } = ReportStatus.Pending;
 
         public Guid UserId { get; set; }
@@ -27,6 +37,10 @@ namespace GarbageCollection.Common.Models
         public string? ReportNote { get; set; }
 
         public DateTime? AssignAt { get; set; }
+
+        public DateTime? StartCollectingAt { get; set; }
+
+        public DateTime? CollectedAt { get; set; }
 
         public DateTime ReportAt { get; set; } = DateTime.UtcNow;
 
