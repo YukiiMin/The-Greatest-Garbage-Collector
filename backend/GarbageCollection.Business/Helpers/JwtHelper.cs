@@ -71,7 +71,7 @@ namespace GarbageCollection.Business.Helpers
             var jwt = BuildToken(claims, expiresAt);
             return (rawToken, jwt, expiresAt);
         }
-<<<<<<< HEAD
+
         public ClaimsPrincipal? ValidateToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -101,9 +101,7 @@ namespace GarbageCollection.Business.Helpers
                 return null;
             }
         }
-=======
 
->>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
         // ── SHA-256 hash ──────────────────────────────────────────────────────
 
         public static string HashToken(string rawToken)

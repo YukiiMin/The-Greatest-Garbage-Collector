@@ -19,7 +19,7 @@ namespace GarbageCollection.DataAccess.Interfaces
 
         /// <summary>Marks an OTP as used.</summary>
         Task MarkUsedAsync(Guid otpId, CancellationToken ct = default);
-<<<<<<< HEAD
+
         Task UpdateAsync(
      Guid otpId,
      string newOtpCode,
@@ -27,8 +27,7 @@ namespace GarbageCollection.DataAccess.Interfaces
      int newCount,
      DateTime updatedAt,
      CancellationToken ct = default);
-=======
->>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
+
 
         Task SaveChangesAsync(CancellationToken ct = default);
     }

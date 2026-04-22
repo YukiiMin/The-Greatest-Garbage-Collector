@@ -30,7 +30,7 @@ namespace GarbageCollection.DataAccess.Repositories
                      .Where(rt => rt.UserId == userId && !rt.IsRevoked)
                      .ExecuteUpdateAsync(s => s.SetProperty(rt => rt.IsRevoked, true), ct);
         }
-<<<<<<< HEAD
+
         public Task<RefreshToken?> GetByTokenHashAsync(string tokenHash, CancellationToken ct = default)
             => _db.RefreshTokens
                   .AsNoTracking()
@@ -43,8 +43,7 @@ namespace GarbageCollection.DataAccess.Repositories
                      .ExecuteUpdateAsync(
                          s => s.SetProperty(rt => rt.IsRevoked, true), ct);
         }
-=======
->>>>>>> 2b44a62e233f1c93c71d628b9c07ab83abfea1a0
+
 
         public Task SaveChangesAsync(CancellationToken ct = default)
             => _db.SaveChangesAsync(ct);
