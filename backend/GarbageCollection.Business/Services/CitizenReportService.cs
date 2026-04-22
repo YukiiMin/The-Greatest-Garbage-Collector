@@ -83,6 +83,9 @@ namespace GarbageCollection.Business.Services
             if (report.Status != ReportStatus.Pending)
                 throw new InvalidOperationException("cannot cancel report that is not pending");
 
+            if ((DateTime.UtcNow - report.CreatedAt).TotalMinutes > 10)
+                throw new InvalidOperationException("cannot cancel report after 10 minutes");
+
             await _reportRepository.DeleteAsync(report);
         }
 
@@ -145,11 +148,13 @@ namespace GarbageCollection.Business.Services
         {
             var allowed = new Dictionary<ReportStatus, ReportStatus[]>
             {
-                { ReportStatus.Pending,    [ReportStatus.Queue,      ReportStatus.Rejected, ReportStatus.Cancel] },
-                { ReportStatus.Queue,      [ReportStatus.Assigned,   ReportStatus.Rejected, ReportStatus.Cancel] },
-                { ReportStatus.Assigned,   [ReportStatus.Processing, ReportStatus.Failed,   ReportStatus.Cancel] },
-                { ReportStatus.Processing, [ReportStatus.Collected,  ReportStatus.Failed,   ReportStatus.Cancel] },
-                { ReportStatus.Collected,  [ReportStatus.Completed]                                              },
+                { ReportStatus.Pending,           [ReportStatus.Queue,             ReportStatus.Rejected, ReportStatus.Cancel] },
+                { ReportStatus.Queue,             [ReportStatus.QueuedForDispatch, ReportStatus.Rejected, ReportStatus.Cancel] },
+                { ReportStatus.QueuedForDispatch, [ReportStatus.OnTheWay,          ReportStatus.Rejected, ReportStatus.Cancel] },
+                { ReportStatus.OnTheWay,          [ReportStatus.Assigned,          ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.Assigned,          [ReportStatus.Processing,        ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.Processing,        [ReportStatus.Collected,         ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.Collected,         [ReportStatus.Completed]                                                     },
             };
 
             if (!allowed.TryGetValue(current, out var allowedNext) || !allowedNext.Contains(next))

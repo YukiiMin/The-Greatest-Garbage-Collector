@@ -20,6 +20,9 @@ namespace GarbageCollection.DataAccess.Data
         public DbSet<Staff> Staffs { get; set; }
         public DbSet<PointCategory> PointCategories { get; set; }
 
+        public DbSet<CollectorHub> CollectorHubs { get; set; }
+        public DbSet<PointTransaction> PointTransactions { get; set; }
+
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<EmailOtp> EmailOtps => Set<EmailOtp>();
@@ -82,11 +85,17 @@ namespace GarbageCollection.DataAccess.Data
                 entity.Property(e => e.Capacity).HasColumnType("decimal(10,2)");
                 entity.Property(e => e.Status).HasConversion<string>();
                 entity.Property(e => e.UserId).HasColumnName("citizen_id");
+                entity.Property(e => e.GpsLat).HasColumnName("gps_lat").HasColumnType("decimal(9,6)");
+                entity.Property(e => e.GpsLng).HasColumnName("gps_lng").HasColumnType("decimal(9,6)");
+                entity.Property(e => e.Address).HasColumnName("address").HasMaxLength(512);
+                entity.Property(e => e.PriorityFlag).HasColumnName("priority_flag");
+                entity.Property(e => e.RouteOrder).HasColumnName("route_order");
                 entity.Property(e => e.AssignAt).HasColumnName("assign_at");
                 entity.Property(e => e.StartCollectingAt).HasColumnName("start_collecting_at");
                 entity.Property(e => e.CollectedAt).HasColumnName("collected_at");
                 entity.Property(e => e.ReportAt).HasColumnName("report_at");
                 entity.Property(e => e.CompleteAt).HasColumnName("complete_at");
+                entity.Property(e => e.TeamId).HasColumnName("team_id");
 
                 entity.HasOne(e => e.User)
                       .WithMany()
@@ -257,12 +266,47 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(t => t.TotalCapacity).HasColumnName("total_capacity").HasColumnType("decimal(10,2)");
                 e.Property(t => t.IsActive).HasColumnName("is_active");
                 e.Property(t => t.CollectorId).HasColumnName("collector_id");
+                e.Property(t => t.WorkAreaId).HasColumnName("work_area_id");
+                e.Property(t => t.DispatchTime).HasColumnName("dispatch_time").HasMaxLength(10);
+                e.Property(t => t.RouteOptimized).HasColumnName("route_optimized");
                 e.Property(t => t.CreatedAt).HasColumnName("created_at");
                 e.Property(t => t.UpdatedAt).HasColumnName("updated_at");
 
                 e.HasOne(t => t.Collector)
                  .WithMany()
                  .HasForeignKey(t => t.CollectorId)
+                 .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // ── CollectorHub ──────────────────────────────────────────────────
+            modelBuilder.Entity<CollectorHub>(e =>
+            {
+                e.ToTable("collector_hubs");
+                e.HasKey(h => h.Id);
+
+                e.Property(h => h.Id).HasColumnName("id");
+                e.Property(h => h.EnterpriseId).HasColumnName("enterprise_id");
+                e.Property(h => h.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
+                e.Property(h => h.Lat).HasColumnName("lat").HasColumnType("decimal(9,6)");
+                e.Property(h => h.Lng).HasColumnName("lng").HasColumnType("decimal(9,6)");
+                e.Property(h => h.CreatedAt).HasColumnName("created_at");
+
+                e.Property(h => h.WorkAreaIds)
+                 .HasColumnName("work_area_ids")
+                 .HasColumnType("text")
+                 .HasConversion(
+                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                     v => JsonSerializer.Deserialize<List<Guid>>(v, (JsonSerializerOptions?)null) ?? new List<Guid>()
+                 )
+                 .Metadata.SetValueComparer(new ValueComparer<List<Guid>>(
+                     (a, b) => a != null && b != null && a.SequenceEqual(b),
+                     v => v.Aggregate(0, (acc, g) => HashCode.Combine(acc, g.GetHashCode())),
+                     v => v.ToList()
+                 ));
+
+                e.HasOne(h => h.Enterprise)
+                 .WithMany()
+                 .HasForeignKey(h => h.EnterpriseId)
                  .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -346,6 +390,31 @@ namespace GarbageCollection.DataAccess.Data
                 e.HasOne(p => p.User)
                  .WithOne()
                  .HasForeignKey<UserPoints>(p => p.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ── PointTransaction ──────────────────────────────────────────────
+            modelBuilder.Entity<PointTransaction>(e =>
+            {
+                e.ToTable("point_transactions");
+                e.HasKey(t => t.Id);
+
+                e.Property(t => t.Id).HasColumnName("id");
+                e.Property(t => t.UserId).HasColumnName("user_id");
+                e.Property(t => t.ReportId).HasColumnName("report_id");
+                e.Property(t => t.Points).HasColumnName("points");
+                e.Property(t => t.Type).HasColumnName("type").IsRequired().HasMaxLength(20);
+                e.Property(t => t.Reason).HasColumnName("reason");
+                e.Property(t => t.CreatedAt).HasColumnName("created_at");
+
+                e.HasOne(t => t.User)
+                 .WithMany()
+                 .HasForeignKey(t => t.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(t => t.Report)
+                 .WithMany()
+                 .HasForeignKey(t => t.ReportId)
                  .OnDelete(DeleteBehavior.Cascade);
             });
 
