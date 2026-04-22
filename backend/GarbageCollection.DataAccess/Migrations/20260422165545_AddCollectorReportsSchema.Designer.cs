@@ -3,6 +3,7 @@ using System;
 using GarbageCollection.DataAccess.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GarbageCollection.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260422165545_AddCollectorReportsSchema")]
+    partial class AddCollectorReportsSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -475,48 +478,6 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.ToTable("point_categories", (string)null);
                 });
 
-            modelBuilder.Entity("GarbageCollection.Common.Models.PointTransaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("integer")
-                        .HasColumnName("points");
-
-                    b.Property<string>("Reason")
-                        .HasColumnType("text")
-                        .HasColumnName("reason");
-
-                    b.Property<int>("ReportId")
-                        .HasColumnType("integer")
-                        .HasColumnName("report_id");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("type");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReportId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("point_transactions", (string)null);
-                });
-
             modelBuilder.Entity("GarbageCollection.Common.Models.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -838,25 +799,6 @@ namespace GarbageCollection.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Enterprise");
-                });
-
-            modelBuilder.Entity("GarbageCollection.Common.Models.PointTransaction", b =>
-                {
-                    b.HasOne("GarbageCollection.Common.Models.CitizenReport", "Report")
-                        .WithMany()
-                        .HasForeignKey("ReportId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GarbageCollection.Common.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Report");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.RefreshToken", b =>
