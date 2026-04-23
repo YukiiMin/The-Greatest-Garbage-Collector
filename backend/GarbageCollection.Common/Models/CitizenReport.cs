@@ -26,7 +26,7 @@ namespace GarbageCollection.Common.Models
 
         public string? ReportNote { get; set; }
 
-        public string? AssignBy { get; set; }
+        public Guid? AssignBy { get; set; }
 
         public DateTime? AssignAt { get; set; }
 
