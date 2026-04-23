@@ -13,7 +13,9 @@ namespace GarbageCollection.Common.DTOs.CitizenReport
         public int? Point { get; set; }
         public int? TeamId { get; set; }
         public string? ReportNote { get; set; }
+        public string? AssignBy { get; set; }
         public DateTime? AssignAt { get; set; }
+        public DateTime? Deadline { get; set; }
         public DateTime? StartCollectingAt { get; set; }
         public DateTime? CollectedAt { get; set; }
         public DateTime ReportAt { get; set; }

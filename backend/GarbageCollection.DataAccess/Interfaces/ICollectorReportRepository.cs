@@ -7,14 +7,14 @@ namespace GarbageCollection.DataAccess.Interfaces
         Task<IEnumerable<CitizenReport>> GetActiveByTeamIdAsync(int teamId);
 
         /// <summary>
-        /// Returns how many QueuedForDispatch reports exist for the team on the given date.
+        /// Returns how many Assigned reports exist for the team on the given date.
         /// </summary>
-        Task<int> CountQueuedForDispatchAsync(int teamId, DateOnly date);
+        Task<int> CountAssignedTodayAsync(int teamId, DateOnly date);
 
         /// <summary>
-        /// Returns whether any OnTheWay report already exists for the team on the given date.
+        /// Returns whether shift was already started today (any Processing report for the team on the given date).
         /// </summary>
-        Task<bool> HasOnTheWayTodayAsync(int teamId, DateOnly date);
+        Task<bool> HasShiftStartedTodayAsync(int teamId, DateOnly date);
 
         /// <summary>
         /// Bulk-updates all QueuedForDispatch reports for the team on the given date to OnTheWay.

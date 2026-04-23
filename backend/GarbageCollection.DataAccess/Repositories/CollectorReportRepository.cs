@@ -20,20 +20,19 @@ namespace GarbageCollection.DataAccess.Repositories
         {
             var activeStatuses = new[]
             {
-                ReportStatus.Assigned,
                 ReportStatus.Processing,
                 ReportStatus.Collected
             };
 
             return _context.CitizenReports
+                .Include(r => r.User)
                 .Where(r => r.TeamId == teamId && activeStatuses.Contains(r.Status))
-                .OrderBy(r => r.RouteOrder)
-                .ThenByDescending(r => r.PriorityFlag)
+                .OrderBy(r => r.Deadline)
                 .ToListAsync()
                 .ContinueWith(t => (IEnumerable<CitizenReport>)t.Result);
         }
 
-        public Task<int> CountQueuedForDispatchAsync(int teamId, DateOnly date)
+        public Task<int> CountAssignedTodayAsync(int teamId, DateOnly date)
         {
             var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             var end   = start.AddDays(1);
@@ -41,11 +40,11 @@ namespace GarbageCollection.DataAccess.Repositories
             return _context.CitizenReports
                 .CountAsync(r =>
                     r.TeamId == teamId &&
-                    r.Status == ReportStatus.QueuedForDispatch &&
+                    r.Status == ReportStatus.Assigned &&
                     r.AssignAt >= start && r.AssignAt < end);
         }
 
-        public Task<bool> HasOnTheWayTodayAsync(int teamId, DateOnly date)
+        public Task<bool> HasShiftStartedTodayAsync(int teamId, DateOnly date)
         {
             var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             var end   = start.AddDays(1);
@@ -53,7 +52,7 @@ namespace GarbageCollection.DataAccess.Repositories
             return _context.CitizenReports
                 .AnyAsync(r =>
                     r.TeamId == teamId &&
-                    r.Status == ReportStatus.OnTheWay &&
+                    r.Status == ReportStatus.Processing &&
                     r.AssignAt >= start && r.AssignAt < end);
         }
 
@@ -64,9 +63,9 @@ namespace GarbageCollection.DataAccess.Repositories
 
             return await _context.Database.ExecuteSqlRawAsync(
                 @"UPDATE citizen_reports
-                  SET status = 'OnTheWay', updated_at = NOW()
+                  SET status = 'Processing', updated_at = NOW()
                   WHERE team_id = @teamId
-                    AND status = 'QueuedForDispatch'
+                    AND status = 'Assigned'
                     AND assign_at >= @start
                     AND assign_at < @end",
                 new NpgsqlParameter("@teamId", teamId),
@@ -83,7 +82,7 @@ namespace GarbageCollection.DataAccess.Repositories
             try
             {
                 // B7a: update report
-                report.Status             = GarbageCollection.Common.Enums.ReportStatus.Collected;
+                report.Status             = ReportStatus.Collected;
                 report.CollectorImageUrls = imageUrls;
                 report.CollectedAt        = DateTime.UtcNow;
                 report.UpdatedAt          = DateTime.UtcNow;
@@ -96,7 +95,7 @@ namespace GarbageCollection.DataAccess.Repositories
                     var userPoints = await _context.UserPoints.FindAsync(report.UserId);
                     if (userPoints is null)
                     {
-                        _context.UserPoints.Add(new GarbageCollection.Common.Models.UserPoints
+                        _context.UserPoints.Add(new UserPoints
                         {
                             UserId      = report.UserId,
                             TotalPoints = pointsEarned,
@@ -117,7 +116,7 @@ namespace GarbageCollection.DataAccess.Repositories
                     }
 
                     // B7c: insert point_transaction
-                    _context.PointTransactions.Add(new GarbageCollection.Common.Models.PointTransaction
+                    _context.PointTransactions.Add(new PointTransaction
                     {
                         UserId    = report.UserId,
                         ReportId  = report.Id,
