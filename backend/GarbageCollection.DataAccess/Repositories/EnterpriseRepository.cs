@@ -14,7 +14,7 @@ namespace GarbageCollection.DataAccess.Repositories
             _context = context;
         }
 
-        public Task<Enterprise?> GetByIdAsync(int id)
+        public Task<Enterprise?> GetByIdAsync(Guid id)
             => _context.Enterprises.FirstOrDefaultAsync(e => e.Id == id);
 
         public Task<IEnumerable<Enterprise>> GetAllAsync()

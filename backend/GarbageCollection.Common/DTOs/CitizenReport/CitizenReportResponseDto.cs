@@ -2,16 +2,16 @@ namespace GarbageCollection.Common.DTOs.CitizenReport
 {
     public class CitizenReportResponseDto
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public List<string> CitizenImageUrls { get; set; } = [];
         public List<string> Types { get; set; } = [];
         public decimal? Capacity { get; set; }
         public string? Description { get; set; }
         public string Status { get; set; } = string.Empty;
         public Guid UserId { get; set; }
-        public int? PointCategoryId { get; set; }
+        public Guid? PointCategoryId { get; set; }
         public int? Point { get; set; }
-        public int? TeamId { get; set; }
+        public Guid? TeamId { get; set; }
         public string? ReportNote { get; set; }
         public Guid? AssignBy { get; set; }
         public DateTime? AssignAt { get; set; }

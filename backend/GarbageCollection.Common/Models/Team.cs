@@ -2,11 +2,11 @@ namespace GarbageCollection.Common.Models
 {
     public class Team
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; } = string.Empty;
         public decimal TotalCapacity { get; set; }
         public bool IsActive { get; set; } = true;
-        public int CollectorId { get; set; }
+        public Guid CollectorId { get; set; }
         public Guid? WorkAreaId { get; set; }
         public string? DispatchTime { get; set; } // e.g. "20:00"
         public bool RouteOptimized { get; set; } = false;

@@ -11,7 +11,7 @@ namespace GarbageCollection.Common.DTOs.Collector
     public class StartShiftData
     {
         [Required]
-        public int TeamId { get; set; }
+        public Guid TeamId { get; set; }
 
         /// <summary>Format: YYYY-MM-DD</summary>
         [Required]

@@ -4,9 +4,9 @@ namespace GarbageCollection.Common.Models
 {
     public class Complaint
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         public Guid CitizenId { get; set; }
-        public int ReportId { get; set; }
+        public Guid ReportId { get; set; }
         public string Reason { get; set; } = string.Empty;
         public List<string> ImageUrls { get; set; } = [];
         public ComplaintStatus Status { get; set; } = ComplaintStatus.Pending;

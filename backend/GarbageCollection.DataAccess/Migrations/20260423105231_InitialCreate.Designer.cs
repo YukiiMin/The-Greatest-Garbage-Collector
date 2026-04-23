@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GarbageCollection.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260423094947_AlignWithERD")]
-    partial class AlignWithERD
+    [Migration("20260423105231_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -65,11 +65,9 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.CitizenReport", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("AssignAt")
                         .HasColumnType("timestamp with time zone")
@@ -112,8 +110,8 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.Property<int?>("Point")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("PointCategoryId")
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("PointCategoryId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("ReportAt")
                         .HasColumnType("timestamp with time zone")
@@ -131,8 +129,8 @@ namespace GarbageCollection.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("TeamId")
-                        .HasColumnType("integer")
+                    b.Property<Guid?>("TeamId")
+                        .HasColumnType("uuid")
                         .HasColumnName("team_id");
 
                     b.Property<string>("Types")
@@ -155,12 +153,10 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Collector", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
                         .IsRequired()
@@ -182,8 +178,8 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("character varying(320)")
                         .HasColumnName("email");
 
-                    b.Property<int>("EnterpriseId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uuid")
                         .HasColumnName("enterprise_id");
 
                     b.Property<decimal?>("Latitude")
@@ -227,11 +223,9 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Complaint", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("AdminResponse")
                         .HasColumnType("text")
@@ -257,8 +251,8 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("reason");
 
-                    b.Property<int>("ReportId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("ReportId")
+                        .HasColumnType("uuid")
                         .HasColumnName("report_id");
 
                     b.Property<DateTime>("RequestAt")
@@ -329,12 +323,10 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Enterprise", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
                         .IsRequired()
@@ -391,19 +383,17 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.PointCategory", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<int>("EnterpriseId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uuid")
                         .HasColumnName("enterprise_id");
 
                     b.Property<bool>("IsActive")
@@ -455,8 +445,8 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("text")
                         .HasColumnName("reason");
 
-                    b.Property<int>("ReportId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("ReportId")
+                        .HasColumnType("uuid")
                         .HasColumnName("report_id");
 
                     b.Property<string>("Type")
@@ -529,12 +519,12 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
-                    b.Property<int>("EnterpriseId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uuid")
                         .HasColumnName("enterprise_id");
 
-                    b.Property<int>("TeamId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uuid")
                         .HasColumnName("team_id");
 
                     b.HasKey("UserId");
@@ -548,15 +538,13 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Team", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CollectorId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("CollectorId")
+                        .HasColumnType("uuid")
                         .HasColumnName("collector_id");
 
                     b.Property<DateTime>("CreatedAt")

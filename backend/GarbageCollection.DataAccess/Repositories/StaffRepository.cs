@@ -21,7 +21,7 @@ namespace GarbageCollection.DataAccess.Repositories
                 .Include(s => s.Team)
                 .FirstOrDefaultAsync(s => s.UserId == userId);
 
-        public Task<IEnumerable<Staff>> GetByEnterpriseIdAsync(int enterpriseId)
+        public Task<IEnumerable<Staff>> GetByEnterpriseIdAsync(Guid enterpriseId)
             => _context.Staffs
                 .Include(s => s.User)
                 .Include(s => s.Team)
@@ -29,7 +29,7 @@ namespace GarbageCollection.DataAccess.Repositories
                 .ToListAsync()
                 .ContinueWith(r => (IEnumerable<Staff>)r.Result);
 
-        public Task<IEnumerable<Staff>> GetByTeamIdAsync(int teamId)
+        public Task<IEnumerable<Staff>> GetByTeamIdAsync(Guid teamId)
             => _context.Staffs
                 .Include(s => s.User)
                 .Where(s => s.TeamId == teamId)

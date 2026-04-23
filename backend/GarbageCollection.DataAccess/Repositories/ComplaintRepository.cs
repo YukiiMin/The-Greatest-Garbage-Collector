@@ -23,7 +23,7 @@ namespace GarbageCollection.DataAccess.Repositories
             return complaint;
         }
 
-        public async Task<Complaint?> GetByIdAsync(int id)
+        public async Task<Complaint?> GetByIdAsync(Guid id)
             => await _context.Complaints
                 .Include(c => c.Citizen)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -35,7 +35,7 @@ namespace GarbageCollection.DataAccess.Repositories
             return complaint;
         }
 
-        public async Task<(IEnumerable<Complaint> Items, int Total)> GetByReportIdPagedAsync(int reportId, int page, int limit)
+        public async Task<(IEnumerable<Complaint> Items, int Total)> GetByReportIdPagedAsync(Guid reportId, int page, int limit)
         {
             var query = _context.Complaints
                 .Where(c => c.ReportId == reportId)
@@ -50,7 +50,7 @@ namespace GarbageCollection.DataAccess.Repositories
             return (items, total);
         }
 
-        public async Task AppendMessageAsync(int complaintId, ComplaintMessage message, CancellationToken ct = default)
+        public async Task AppendMessageAsync(Guid complaintId, ComplaintMessage message, CancellationToken ct = default)
         {
             var json = JsonSerializer.Serialize(new[] { message });
             await _context.Database.ExecuteSqlRawAsync(

@@ -69,10 +69,10 @@ namespace GarbageCollection.API.Controllers
         /// <summary>
         /// Lấy chi tiết một báo cáo theo ID.
         /// </summary>
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:guid}")]
         [ProducesResponseType(typeof(ApiResponse<CitizenReportResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetReportById(int id)
+        public async Task<IActionResult> GetReportById(Guid id)
         {
             var result = await _reportService.GetReportByIdAsync(id);
             if (result is null)
@@ -84,8 +84,6 @@ namespace GarbageCollection.API.Controllers
         /// <summary>
         /// Lấy danh sách báo cáo của User đang đăng nhập, hỗ trợ phân trang.
         /// </summary>
-        /// <param name="page">Trang hiện tại, bắt đầu từ 1 (mặc định: 1)</param>
-        /// <param name="limit">Số bản ghi mỗi trang, tối đa 50 (mặc định: 10)</param>
         [Authorize]
         [HttpGet("/api/v1/users/citizen-reports")]
         [ProducesResponseType(typeof(ApiResponse<CitizenReportsResult>), StatusCodes.Status200OK)]
@@ -108,10 +106,8 @@ namespace GarbageCollection.API.Controllers
         /// <summary>
         /// Citizen cập nhật báo cáo — chỉ được khi status là Pending và chưa từng update.
         /// </summary>
-        /// <param name="id">ID của báo cáo</param>
-        /// <param name="dto">Các trường cần cập nhật (tất cả optional)</param>
         [Authorize]
-        [HttpPut("/api/v1/users/citizen-reports/{id:int}")]
+        [HttpPut("/api/v1/users/citizen-reports/{id:guid}")]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<CitizenReportResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -119,7 +115,7 @@ namespace GarbageCollection.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status429TooManyRequests)]
-        public async Task<IActionResult> UpdateReport(int id, [FromForm] UpdateCitizenReportDto dto)
+        public async Task<IActionResult> UpdateReport(Guid id, [FromForm] UpdateCitizenReportDto dto)
         {
             if (!ModelState.IsValid)
                 return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_INPUT"));
@@ -149,16 +145,15 @@ namespace GarbageCollection.API.Controllers
         }
 
         /// <summary>
-        /// Citizen hủy báo cáo — chỉ được khi status là Pending.
+        /// Citizen hủy báo cáo — chỉ được khi status là Pending và trong 10 phút.
         /// </summary>
-        /// <param name="id">ID của báo cáo</param>
         [Authorize]
-        [HttpDelete("/api/v1/users/citizen-reports/{id:int}")]
+        [HttpDelete("/api/v1/users/citizen-reports/{id:guid}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> CancelReport(int id)
+        public async Task<IActionResult> CancelReport(Guid id)
         {
             var (userId, authErr) = await GetAuthorizedUserAsync();
             if (authErr is not null) return authErr;
@@ -167,7 +162,7 @@ namespace GarbageCollection.API.Controllers
             return Ok(ApiResponse<object>.Ok(null!, "report cancelled successfully"));
         }
 
-private async Task<(Guid Id, IActionResult? Error)> GetAuthorizedUserAsync()
+        private async Task<(Guid Id, IActionResult? Error)> GetAuthorizedUserAsync()
         {
             var email = User.GetEmail();
             if (email is null)

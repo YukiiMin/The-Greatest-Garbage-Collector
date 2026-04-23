@@ -14,12 +14,12 @@ namespace GarbageCollection.DataAccess.Repositories
             _context = context;
         }
 
-        public Task<PointCategory?> GetByIdAsync(int id)
+        public Task<PointCategory?> GetByIdAsync(Guid id)
             => _context.PointCategories
                 .Include(p => p.Enterprise)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
-        public Task<IEnumerable<PointCategory>> GetByEnterpriseIdAsync(int enterpriseId)
+        public Task<IEnumerable<PointCategory>> GetByEnterpriseIdAsync(Guid enterpriseId)
             => _context.PointCategories
                 .Where(p => p.EnterpriseId == enterpriseId)
                 .OrderBy(p => p.Name)

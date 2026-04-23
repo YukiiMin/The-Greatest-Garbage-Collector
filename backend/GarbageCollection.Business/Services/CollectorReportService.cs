@@ -52,7 +52,7 @@ namespace GarbageCollection.Business.Services
             };
         }
 
-        public async Task<StartShiftResponseDto> StartShiftAsync(Guid userId, int teamId, DateOnly date)
+        public async Task<StartShiftResponseDto> StartShiftAsync(Guid userId, Guid teamId, DateOnly date)
         {
             // B1: verify staff belongs to the requested team
             var staff = await _staffRepository.GetByUserIdAsync(userId)
@@ -88,7 +88,7 @@ namespace GarbageCollection.Business.Services
                 throw new KeyNotFoundException("no reports assigned for dispatch today");
 
             // B4: check shift not already started
-            if (await _reportRepository.HasShiftStartedTodayAsync(teamId, date))
+            if (await _reportRepository.HasOnTheWayTodayAsync(teamId, date))
                 throw new InvalidOperationException("shift already started today");
 
             // B5: bulk update
@@ -101,7 +101,7 @@ namespace GarbageCollection.Business.Services
             };
         }
 
-        public async Task<CollectReportResponseDto> CollectReportAsync(Guid userId, int reportId, List<IFormFile> images)
+        public async Task<CollectReportResponseDto> CollectReportAsync(Guid userId, Guid reportId, List<IFormFile> images)
         {
             // B2: find report
             var report = await _citizenReportRepository.GetByIdAsync(reportId)
@@ -114,8 +114,8 @@ namespace GarbageCollection.Business.Services
             if (report.TeamId != staff.TeamId)
                 throw new UnauthorizedAccessException("you are not in the team assigned to this report");
 
-            // B4: status must be Processing
-            if (report.Status != ReportStatus.Processing)
+            // B4: status must be OnTheWay
+            if (report.Status != ReportStatus.OnTheWay)
                 throw new InvalidOperationException($"cannot collect report with status '{report.Status}'");
 
             // B6: upload images

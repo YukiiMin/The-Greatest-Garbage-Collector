@@ -29,13 +29,13 @@ namespace GarbageCollection.API.Controllers
         /// <param name="reportId">ID của báo cáo</param>
         /// <param name="dto">Lý do và ảnh đính kèm (jpg/png/jpeg, tối đa 5MB/ảnh)</param>
         [Authorize]
-        [HttpPost("/api/v1/users/citizen-reports/{reportId:int}/complaints")]
+        [HttpPost("/api/v1/users/citizen-reports/{reportId:guid}/complaints")]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<ComplaintResponseDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status413RequestEntityTooLarge)]
-        public async Task<IActionResult> CreateComplaint(int reportId, [FromForm] CreateComplaintDto dto)
+        public async Task<IActionResult> CreateComplaint(Guid reportId, [FromForm] CreateComplaintDto dto)
         {
             if (!ModelState.IsValid)
                 return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_INPUT"));
@@ -70,11 +70,11 @@ namespace GarbageCollection.API.Controllers
         /// <param name="page">Trang hiện tại (mặc định 1)</param>
         /// <param name="limit">Số item mỗi trang (1–50, mặc định 10)</param>
         [Authorize]
-        [HttpGet("/api/v1/users/citizen-reports/{reportId:int}/complaints")]
+        [HttpGet("/api/v1/users/citizen-reports/{reportId:guid}/complaints")]
         [ProducesResponseType(typeof(ApiResponse<ComplaintsListResult>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
-        public async Task<IActionResult> GetComplaints(int reportId, [FromQuery] int page = 1, [FromQuery] int limit = 10)
+        public async Task<IActionResult> GetComplaints(Guid reportId, [FromQuery] int page = 1, [FromQuery] int limit = 10)
         {
             if (page < 1 || limit < 1 || limit > 50)
                 return UnprocessableEntity(ApiResponse<object>.Fail("invalid query params", "INVALID_QUERY_PARAMS"));
@@ -92,11 +92,11 @@ namespace GarbageCollection.API.Controllers
         /// <param name="reportId">ID của báo cáo</param>
         /// <param name="id">ID của complaint</param>
         [Authorize]
-        [HttpGet("/api/v1/users/citizen-reports/{reportId:int}/complaints/{id:int}")]
+        [HttpGet("/api/v1/users/citizen-reports/{reportId:guid}/complaints/{id:guid}")]
         [ProducesResponseType(typeof(ApiResponse<ComplaintResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> GetComplaint(int reportId, int id)
+        public async Task<IActionResult> GetComplaint(Guid reportId, Guid id)
         {
             var (userId, authErr) = await GetAuthorizedUserAsync();
             if (authErr is not null) return authErr;
@@ -111,13 +111,13 @@ namespace GarbageCollection.API.Controllers
         /// <param name="reportId">ID của báo cáo</param>
         /// <param name="id">ID của complaint</param>
         [Authorize]
-        [HttpPost("/api/v1/users/citizen-reports/{reportId:int}/complaints/{id:int}/messages")]
+        [HttpPost("/api/v1/users/citizen-reports/{reportId:guid}/complaints/{id:guid}/messages")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
-        public async Task<IActionResult> SendMessage(int reportId, int id, [FromBody] SendComplaintMessageRequest request, CancellationToken ct)
+        public async Task<IActionResult> SendMessage(Guid reportId, Guid id, [FromBody] SendComplaintMessageRequest request, CancellationToken ct)
         {
             if (!ModelState.IsValid)
                 return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_INPUT"));
