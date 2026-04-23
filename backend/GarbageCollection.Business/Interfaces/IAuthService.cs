@@ -2,7 +2,7 @@
 ﻿using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.DTOs.Auth.Local;
 
-﻿using GarbageCollection.Common.DTOs.Auth.Local;
+
 
 using GarbageCollection.Common.Models.Internal;
 using System;
@@ -24,5 +24,9 @@ namespace GarbageCollection.Business.Interfaces
         Task<LicenseResult> IssueLicenseAsync(string? rawRefreshTokenJwt, CancellationToken ct = default);
 
         Task RegisterAsync(LocalRegisterRequestDto data);
+
+        Task<(int StatusCode, ApiResponse<object> Response)> ResetPasswordAsync(
+       ResetPasswordRequestDto request,
+       CancellationToken ct = default);
     }
 }

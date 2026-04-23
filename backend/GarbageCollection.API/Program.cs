@@ -143,6 +143,7 @@ builder.Services.AddScoped<ITeamRepository,          TeamRepository>();
 builder.Services.AddScoped<IUserRepository,          UserRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository,  RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailOtpRepository,      EmailOtpRepository>();
+builder.Services.AddScoped<IPasswordOtpRepository, PasswordOtpRepository>();
 
 // Services
 builder.Services.AddScoped<ICloudinaryService,  CloudinaryService>();
@@ -156,6 +157,7 @@ builder.Services.AddScoped<IVerifyEmailService, VerifyEmailService>();
 builder.Services.AddScoped<IEmailService,       SmtpEmailService>();
 
 builder.Services.AddScoped<IResendOtpService, ResendOtpService>();
+builder.Services.AddScoped<IPasswordOtpService, PasswordOtpService>();
 builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
 
 
