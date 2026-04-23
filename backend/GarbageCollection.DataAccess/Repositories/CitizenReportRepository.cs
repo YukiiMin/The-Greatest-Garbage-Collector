@@ -23,7 +23,7 @@ namespace GarbageCollection.DataAccess.Repositories
         }
 
         public async Task<CitizenReport?> GetByIdAsync(Guid id)
-        {
+        public async Task<CitizenReport?> GetByIdAsync(int id)        {
             return await _context.CitizenReports
                 .Include(r => r.User)
                 .FirstOrDefaultAsync(r => r.Id == id);

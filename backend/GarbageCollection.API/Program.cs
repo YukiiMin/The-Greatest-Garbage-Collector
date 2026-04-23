@@ -143,8 +143,11 @@ builder.Services.AddScoped<ITeamRepository,          TeamRepository>();
 builder.Services.AddScoped<IUserRepository,          UserRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository,  RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailOtpRepository,      EmailOtpRepository>();
+
+builder.Services.AddScoped<IPasswordOtpRepository, PasswordOtpRepository>();
 builder.Services.AddScoped<IUserPointsRepository,    UserPointsRepository>();
 builder.Services.AddScoped<ICollectorReportRepository, CollectorReportRepository>();
+
 
 // Services
 builder.Services.AddScoped<IUploadImageService,  UploadImageService>();
@@ -160,6 +163,7 @@ builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ICollectorReportService, CollectorReportService>();
 
 builder.Services.AddScoped<IResendOtpService, ResendOtpService>();
+builder.Services.AddScoped<IPasswordOtpService, PasswordOtpService>();
 builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
 
 
