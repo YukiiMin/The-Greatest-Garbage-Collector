@@ -8,5 +8,6 @@ namespace GarbageCollection.Business.Interfaces
         Task<ComplaintResponseDto> GetComplaintAsync(Guid citizenId, Guid reportId, Guid complaintId);
         Task<ComplaintsListResult> GetComplaintsByReportAsync(Guid citizenId, Guid reportId, int page, int limit);
         Task SendMessageAsync(Guid citizenId, Guid reportId, Guid complaintId, string message, CancellationToken ct = default);
+        Task<ComplaintsListResult> GetUserComplaintsPagedAsync(Guid citizenId, int page, int limit);
     }
 }

@@ -109,6 +109,22 @@ namespace GarbageCollection.Business.Services
             await _complaintRepository.AppendMessageAsync(complaintId, msg, ct);
         }
 
+        public async Task<ComplaintsListResult> GetUserComplaintsPagedAsync(Guid citizenId, int page, int limit)
+        {
+            var (items, total) = await _complaintRepository.GetByCitizenIdPagedAsync(citizenId, page, limit);
+            return new ComplaintsListResult
+            {
+                Complaints = items.Select(MapToResponse).ToList(),
+                Pagination = new GarbageCollection.Common.DTOs.PaginationMeta
+                {
+                    Page       = page,
+                    Limit      = limit,
+                    Total      = total,
+                    TotalPages = (int)Math.Ceiling((double)total / limit)
+                }
+            };
+        }
+
         private static ComplaintResponseDto MapToResponse(Complaint c) => new()
         {
             Id            = c.Id,

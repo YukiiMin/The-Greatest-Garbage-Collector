@@ -9,5 +9,6 @@ namespace GarbageCollection.DataAccess.Interfaces
         Task<Complaint> UpdateAsync(Complaint complaint);
         Task<(IEnumerable<Complaint> Items, int Total)> GetByReportIdPagedAsync(Guid reportId, int page, int limit);
         Task AppendMessageAsync(Guid complaintId, ComplaintMessage message, CancellationToken ct = default);
+        Task<(IEnumerable<Complaint> Items, int Total)> GetByCitizenIdPagedAsync(Guid citizenId, int page, int limit);
     }
 }

@@ -21,6 +21,7 @@ namespace GarbageCollection.DataAccess.Data
         public DbSet<PointCategory> PointCategories { get; set; }
 
         public DbSet<PointTransaction> PointTransactions { get; set; }
+        public DbSet<TeamSession> TeamSessions { get; set; }
 
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -188,6 +189,7 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(s => s.UserId).HasColumnName("user_id");
                 e.Property(s => s.EnterpriseId).HasColumnName("enterprise_id");
                 e.Property(s => s.TeamId).HasColumnName("team_id");
+                e.Property(s => s.JoinTeamAt).HasColumnName("join_team_at");
 
                 e.HasOne(s => s.User)
                  .WithMany()
@@ -421,6 +423,29 @@ namespace GarbageCollection.DataAccess.Data
                  .HasForeignKey<PasswordOtp>(o => o.Email)
                  .HasPrincipalKey<User>(u => u.Email)
                  .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ── TeamSession ───────────────────────────────────────────────────
+            modelBuilder.Entity<TeamSession>(e =>
+            {
+                e.ToTable("team_sessions");
+                e.HasKey(s => s.Id);
+
+                e.Property(s => s.Id).HasColumnName("id");
+                e.Property(s => s.TeamId).HasColumnName("team_id");
+                e.Property(s => s.Date).HasColumnName("date");
+                e.Property(s => s.StartAt).HasColumnName("start_at");
+                e.Property(s => s.EndAt).HasColumnName("end_at");
+                e.Property(s => s.TotalReports).HasColumnName("total_reports");
+                e.Property(s => s.TotalCapacity).HasColumnName("total_capacity").HasColumnType("decimal(10,2)");
+                e.Property(s => s.CreatedAt).HasColumnName("created_at");
+
+                e.HasOne(s => s.Team)
+                 .WithMany()
+                 .HasForeignKey(s => s.TeamId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasIndex(s => new { s.TeamId, s.Date });
             });
 
         }

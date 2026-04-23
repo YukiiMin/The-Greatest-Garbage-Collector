@@ -50,6 +50,21 @@ namespace GarbageCollection.DataAccess.Repositories
             return (items, total);
         }
 
+        public async Task<(IEnumerable<Complaint> Items, int Total)> GetByCitizenIdPagedAsync(Guid citizenId, int page, int limit)
+        {
+            var query = _context.Complaints
+                .Where(c => c.CitizenId == citizenId)
+                .OrderByDescending(c => c.RequestAt);
+
+            var total = await query.CountAsync();
+            var items = await query
+                .Skip((page - 1) * limit)
+                .Take(limit)
+                .ToListAsync();
+
+            return (items, total);
+        }
+
         public async Task AppendMessageAsync(Guid complaintId, ComplaintMessage message, CancellationToken ct = default)
         {
             var json = JsonSerializer.Serialize(new[] { message });

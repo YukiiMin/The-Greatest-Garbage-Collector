@@ -64,6 +64,27 @@ namespace GarbageCollection.API.Controllers
         }
 
         /// <summary>
+        /// Lấy toàn bộ complaints của user đang đăng nhập, hỗ trợ phân trang.
+        /// </summary>
+        [Authorize]
+        [HttpGet("/api/v1/users/complaints")]
+        [ProducesResponseType(typeof(ApiResponse<ComplaintsListResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> GetUserComplaints([FromQuery] int page = 1, [FromQuery] int limit = 10)
+        {
+            if (page < 1 || limit < 1 || limit > 50)
+                return UnprocessableEntity(ApiResponse<object>.Fail(
+                    "invalid query params", "INVALID_QUERY_PARAMS",
+                    "page >= 1, limit must be between 1 and 50"));
+
+            var (userId, authErr) = await GetAuthorizedUserAsync();
+            if (authErr is not null) return authErr;
+
+            var result = await _complaintService.GetUserComplaintsPagedAsync(userId, page, limit);
+            return Ok(ApiResponse<ComplaintsListResult>.Ok(result, "get user complaints successfully"));
+        }
+
+        /// <summary>
         /// Lấy danh sách complaints theo reportId, hỗ trợ phân trang.
         /// </summary>
         /// <param name="reportId">ID của báo cáo</param>
