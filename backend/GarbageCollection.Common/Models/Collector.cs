@@ -15,6 +15,7 @@ namespace GarbageCollection.Common.Models
         /// <summary>Khu vực hoạt động đi thu gom rác (mô tả hoặc GeoJSON polygon).</summary>
         public string WorkArea { get; set; } = string.Empty;
 
+        public int? AssignedCapacity { get; set; }
         public int EnterpriseId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
