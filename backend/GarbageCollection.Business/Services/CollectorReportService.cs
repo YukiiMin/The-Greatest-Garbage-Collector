@@ -83,12 +83,12 @@ namespace GarbageCollection.Business.Services
                 throw new InvalidOperationException($"too early — shift starts at {team.DispatchTime ?? "20:00"}");
 
             // B3: check reports exist
-            var queued = await _reportRepository.CountQueuedForDispatchAsync(teamId, date);
+            var queued = await _reportRepository.CountAssignedTodayAsync(teamId, date);
             if (queued == 0)
-                throw new KeyNotFoundException("no reports queued for dispatch today");
+                throw new KeyNotFoundException("no reports assigned for dispatch today");
 
             // B4: check shift not already started
-            if (await _reportRepository.HasOnTheWayTodayAsync(teamId, date))
+            if (await _reportRepository.HasShiftStartedTodayAsync(teamId, date))
                 throw new InvalidOperationException("shift already started today");
 
             // B5: bulk update
@@ -97,7 +97,7 @@ namespace GarbageCollection.Business.Services
             return new StartShiftResponseDto
             {
                 UpdatedCount = updated,
-                DispatchTime = team.DispatchTime
+                AssignTime   = team.DispatchTime
             };
         }
 
@@ -114,8 +114,8 @@ namespace GarbageCollection.Business.Services
             if (report.TeamId != staff.TeamId)
                 throw new UnauthorizedAccessException("you are not in the team assigned to this report");
 
-            // B4: status must be OnTheWay
-            if (report.Status != ReportStatus.OnTheWay)
+            // B4: status must be Processing
+            if (report.Status != ReportStatus.Processing)
                 throw new InvalidOperationException($"cannot collect report with status '{report.Status}'");
 
             // B6: upload images
@@ -163,14 +163,11 @@ namespace GarbageCollection.Business.Services
             Id              = r.Id,
             WasteCategories = r.Types.Select(t => t.ToString()).ToList(),
             WasteUnit       = r.Capacity,
-            GpsLat          = r.GpsLat,
-            GpsLng          = r.GpsLng,
-            Address         = r.Address,
+            UserAddress     = r.User?.Address,
             Description     = r.Description,
             ImageUrls       = r.CitizenImageUrls,
-            PriorityFlag    = r.PriorityFlag,
             Status          = r.Status.ToString(),
-            RouteOrder      = r.RouteOrder
+            Deadline        = r.Deadline
         };
     }
 }
