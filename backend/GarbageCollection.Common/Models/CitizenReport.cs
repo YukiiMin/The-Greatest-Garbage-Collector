@@ -18,6 +18,9 @@ namespace GarbageCollection.Common.Models
 
         public Guid UserId { get; set; }
 
+        public Guid CitizenId { get; set; }
+        public User Citizen { get; set; } = null!;
+
         public int? PointCategoryId { get; set; }
 
         public int? Point { get; set; }
@@ -48,5 +51,6 @@ namespace GarbageCollection.Common.Models
 
         // Navigation
         public User User { get; set; } = null!;
+
     }
 }

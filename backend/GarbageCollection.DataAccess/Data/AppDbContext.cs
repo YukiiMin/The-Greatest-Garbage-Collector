@@ -30,7 +30,6 @@ namespace GarbageCollection.DataAccess.Data
         public DbSet<UserPoints> UserPoints => Set<UserPoints>();
 
 
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -415,6 +414,7 @@ namespace GarbageCollection.DataAccess.Data
                  .OnDelete(DeleteBehavior.Cascade);
             });
 
+          
         }
     }
 }

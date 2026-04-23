@@ -1,3 +1,4 @@
+using GarbageCollection.Common.Enums;
 using GarbageCollection.Common.Models;
 using GarbageCollection.DataAccess.Data;
 using GarbageCollection.DataAccess.Interfaces;
@@ -57,6 +58,45 @@ namespace GarbageCollection.DataAccess.Repositories
                 "UPDATE complaints SET messages = COALESCE(messages, '[]'::jsonb) || @msg::jsonb WHERE id = @id",
                 new NpgsqlParameter("@msg", json),
                 new NpgsqlParameter("@id", complaintId));
+        }
+        public async Task<IReadOnlyList<Complaint>> GetComplaintsAsync(
+            ComplaintStatus status,
+            int page,
+            int limit,
+            CancellationToken ct = default)
+        {
+            var offset = (page - 1) * limit;
+
+            return await _context.Complaints
+                            .AsNoTracking()
+                            .Where(c => c.Status == status)
+                            .OrderBy(x => x.RequestAt)
+                            .Skip(offset)
+                            .Take(limit)
+                            .ToListAsync(ct);
+        }
+        public Task<int> CountAsync(
+         ComplaintStatus status,
+         CancellationToken ct = default)
+         => _context.Complaints
+               .AsNoTracking()
+               .CountAsync(c => c.Status == status, ct);
+
+        public async Task<Complaint?> GetDetailAsync(
+           int complaintId,
+           CancellationToken ct = default)
+        {
+            return await _context.Complaints
+                .AsNoTracking()
+
+                // l?y ng??i t?o complaint
+                .Include(c => c.Citizen)
+
+                // l?y report + citizen c?a report
+                .Include(c => c.Report)
+                    .ThenInclude(r => r.Citizen)
+
+                .FirstOrDefaultAsync(c => c.Id == complaintId, ct);
         }
     }
 }
