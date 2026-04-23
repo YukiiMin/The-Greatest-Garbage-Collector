@@ -1,5 +1,5 @@
 using GarbageCollection.Common.DTOs;
-using GarbageCollection.Common.DTOs.WasteReport;
+using GarbageCollection.Common.DTOs.CitizenReport;
 using GarbageCollection.Common.Enums;
 
 namespace GarbageCollection.Business.Interfaces

@@ -105,6 +105,30 @@ namespace GarbageCollection.API.Controllers
             return Ok(ApiResponse<ComplaintResponseDto>.Ok(result, "get complaint successfully"));
         }
 
+        /// <summary>
+        /// Citizen gửi tin nhắn vào thread khiếu nại.
+        /// </summary>
+        /// <param name="reportId">ID của báo cáo</param>
+        /// <param name="id">ID của complaint</param>
+        [Authorize]
+        [HttpPost("/api/v1/users/citizen-reports/{reportId:int}/complaints/{id:int}/messages")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> SendMessage(int reportId, int id, [FromBody] SendComplaintMessageRequest request, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+                return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_INPUT"));
+
+            var (userId, authErr) = await GetAuthorizedUserAsync();
+            if (authErr is not null) return authErr;
+
+            await _complaintService.SendMessageAsync(userId, reportId, id, request.Data.Message, ct);
+            return Ok(ApiResponse<object>.Ok(null!, "message sent"));
+        }
+
         private async Task<(Guid Id, IActionResult? Error)> GetAuthorizedUserAsync()
         {
             var email = User.GetEmail();

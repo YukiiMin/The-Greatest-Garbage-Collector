@@ -25,14 +25,15 @@ namespace GarbageCollection.Business.Services
             return MapToDto(user);
         }
 
-        public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserProfileData data)
+        public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest data, string? avatarUrl = null)
         {
             var user = await _userRepository.GetByIdTrackedAsync(userId)
                 ?? throw new KeyNotFoundException("account not found");
 
             user.FullName  = data.Fullname;
             user.Address   = data.Address;
-            user.AvatarUrl = data.AvatarUrl;
+            if (avatarUrl != null)
+                user.AvatarUrl = avatarUrl;
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.SaveChangesAsync();

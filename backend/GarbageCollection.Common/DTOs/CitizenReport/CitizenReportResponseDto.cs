@@ -1,4 +1,4 @@
-namespace GarbageCollection.Common.DTOs.WasteReport
+namespace GarbageCollection.Common.DTOs.CitizenReport
 {
     public class CitizenReportResponseDto
     {
@@ -13,7 +13,11 @@ namespace GarbageCollection.Common.DTOs.WasteReport
         public int? Point { get; set; }
         public int? TeamId { get; set; }
         public string? ReportNote { get; set; }
+        public string? AssignBy { get; set; }
         public DateTime? AssignAt { get; set; }
+        public DateTime? Deadline { get; set; }
+        public DateTime? StartCollectingAt { get; set; }
+        public DateTime? CollectedAt { get; set; }
         public DateTime ReportAt { get; set; }
         public List<string> CollectorImageUrls { get; set; } = [];
         public DateTime? CompleteAt { get; set; }

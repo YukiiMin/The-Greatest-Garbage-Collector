@@ -11,6 +11,7 @@ namespace GarbageCollection.Common.Models
         public List<string> ImageUrls { get; set; } = [];
         public ComplaintStatus Status { get; set; } = ComplaintStatus.Pending;
         public string? AdminResponse { get; set; }
+        public List<ComplaintMessage> Messages { get; set; } = [];
         public DateTime RequestAt { get; set; } = DateTime.UtcNow;
         public DateTime? ResponseAt { get; set; }
 

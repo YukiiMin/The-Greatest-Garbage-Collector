@@ -2,8 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using GarbageCollection.Business.Helpers;
 using GarbageCollection.Common.DTOs;
-using GarbageCollection.Common.DTOs.WasteReport;
-using GarbageCollection.Common.Enums;
+using GarbageCollection.Common.DTOs.CitizenReport;
 using GarbageCollection.Business.Interfaces;
 using GarbageCollection.DataAccess.Interfaces;
 
@@ -11,12 +10,12 @@ namespace GarbageCollection.API.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class WasteReportController : ControllerBase
+    public class CitizenReportController : ControllerBase
     {
         private readonly ICitizenReportService _reportService;
         private readonly IUserRepository _userRepository;
 
-        public WasteReportController(ICitizenReportService reportService, IUserRepository userRepository)
+        public CitizenReportController(ICitizenReportService reportService, IUserRepository userRepository)
         {
             _reportService   = reportService;
             _userRepository  = userRepository;
@@ -42,7 +41,7 @@ namespace GarbageCollection.API.Controllers
             if (dto.Images.Count < 1)
                 return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_INPUT", "Vui lòng gửi ít nhất 1 ảnh."));
 
-            if (dto.Images.Count > 5)
+            if (dto.Images.Count > 3)
                 return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_INPUT", "Tối đa 5 ảnh mỗi lần gửi."));
 
             if (dto.Types.Count < 1)
@@ -168,23 +167,7 @@ namespace GarbageCollection.API.Controllers
             return Ok(ApiResponse<object>.Ok(null!, "report cancelled successfully"));
         }
 
-        /// <summary>
-        /// Cập nhật trạng thái báo cáo theo luồng: Pending → Accepted → Assigned → Collected.
-        /// </summary>
-        /// <param name="id">ID của báo cáo</param>
-        /// <param name="newStatus">Trạng thái mới</param>
-        [HttpPatch("{id:int}/status")]
-        [ProducesResponseType(typeof(ApiResponse<CitizenReportResponseDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> UpdateStatus(int id, [FromQuery] ReportStatus newStatus)
-        {
-            // TODO: Kiểm tra role — chỉ Enterprise/Collector mới được đổi status
-            var result = await _reportService.UpdateStatusAsync(id, newStatus);
-            return Ok(ApiResponse<CitizenReportResponseDto>.Ok(result, "Cập nhật trạng thái thành công."));
-        }
-
-        private async Task<(Guid Id, IActionResult? Error)> GetAuthorizedUserAsync()
+private async Task<(Guid Id, IActionResult? Error)> GetAuthorizedUserAsync()
         {
             var email = User.GetEmail();
             if (email is null)

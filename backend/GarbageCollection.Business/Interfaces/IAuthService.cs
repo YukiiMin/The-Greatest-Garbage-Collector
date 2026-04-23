@@ -1,15 +1,7 @@
-
-﻿using GarbageCollection.Common.DTOs;
+using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.DTOs.Auth.Local;
 
-
-
 using GarbageCollection.Common.Models.Internal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GarbageCollection.Business.Interfaces
 {

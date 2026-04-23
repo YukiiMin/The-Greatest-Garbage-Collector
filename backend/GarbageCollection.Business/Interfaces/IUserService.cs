@@ -5,7 +5,7 @@ namespace GarbageCollection.Business.Interfaces
     public interface IUserService
     {
         Task<UserProfileDto> GetProfileAsync(Guid userId);
-        Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserProfileData data);
+        Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest data, string? avatarUrl = null);
 
         /// <summary>
         /// Đổi mật khẩu. Trả về accessToken mới để controller set cookie.

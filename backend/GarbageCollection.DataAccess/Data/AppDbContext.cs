@@ -1,13 +1,8 @@
-
-﻿using GarbageCollection.Common.DTOs;
+using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.Enums;
 using GarbageCollection.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using GarbageCollection.Common.Enums;
-using GarbageCollection.Common.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -25,11 +20,14 @@ namespace GarbageCollection.DataAccess.Data
         public DbSet<Staff> Staffs { get; set; }
         public DbSet<PointCategory> PointCategories { get; set; }
 
+        public DbSet<PointTransaction> PointTransactions { get; set; }
+
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<EmailOtp> EmailOtps => Set<EmailOtp>();
 
         public DbSet<PasswordOtp> PasswordOtps => Set<PasswordOtp>();
+        public DbSet<UserPoints> UserPoints => Set<UserPoints>();
 
 
 
@@ -85,6 +83,15 @@ namespace GarbageCollection.DataAccess.Data
                 entity.Property(e => e.ReportNote).HasMaxLength(500);
                 entity.Property(e => e.Capacity).HasColumnType("decimal(10,2)");
                 entity.Property(e => e.Status).HasConversion<string>();
+                entity.Property(e => e.UserId).HasColumnName("citizen_id");
+                entity.Property(e => e.AssignBy).HasColumnName("assign_by").HasMaxLength(256);
+                entity.Property(e => e.AssignAt).HasColumnName("assign_at");
+                entity.Property(e => e.Deadline).HasColumnName("deadline");
+                entity.Property(e => e.StartCollectingAt).HasColumnName("start_collecting_at");
+                entity.Property(e => e.CollectedAt).HasColumnName("collected_at");
+                entity.Property(e => e.ReportAt).HasColumnName("report_at");
+                entity.Property(e => e.CompleteAt).HasColumnName("complete_at");
+                entity.Property(e => e.TeamId).HasColumnName("team_id");
 
                 entity.HasOne(e => e.User)
                       .WithMany()
@@ -120,6 +127,19 @@ namespace GarbageCollection.DataAccess.Data
                 entity.Property(e => e.Status)
                       .HasColumnName("status")
                       .HasConversion<string>();
+
+                entity.Property(e => e.Messages)
+                      .HasColumnName("messages")
+                      .HasColumnType("jsonb")
+                      .HasConversion(
+                          v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                          v => JsonSerializer.Deserialize<List<ComplaintMessage>>(v, (JsonSerializerOptions?)null) ?? new List<ComplaintMessage>()
+                      )
+                      .Metadata.SetValueComparer(new ValueComparer<List<ComplaintMessage>>(
+                          (a, b) => a != null && b != null && a.Count == b.Count,
+                          v => v.Count,
+                          v => v.ToList()
+                      ));
 
                 entity.HasOne(e => e.Report)
                       .WithMany()
@@ -242,6 +262,9 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(t => t.TotalCapacity).HasColumnName("total_capacity").HasColumnType("decimal(10,2)");
                 e.Property(t => t.IsActive).HasColumnName("is_active");
                 e.Property(t => t.CollectorId).HasColumnName("collector_id");
+                e.Property(t => t.WorkAreaId).HasColumnName("work_area_id");
+                e.Property(t => t.DispatchTime).HasColumnName("dispatch_time").HasMaxLength(10);
+                e.Property(t => t.RouteOptimized).HasColumnName("route_optimized");
                 e.Property(t => t.CreatedAt).HasColumnName("created_at");
                 e.Property(t => t.UpdatedAt).HasColumnName("updated_at");
 
@@ -311,6 +334,52 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(o => o.CreatedAt).HasColumnName("created_at");
 
                 e.HasIndex(o => o.Email);
+            });
+
+            // ── UserPoints ────────────────────────────────────────────────────
+            modelBuilder.Entity<UserPoints>(e =>
+            {
+                e.ToTable("user_points");
+                e.HasKey(p => p.UserId);
+
+                e.Property(p => p.UserId).HasColumnName("user_id");
+                e.Property(p => p.WeekPoints).HasColumnName("week_points");
+                e.Property(p => p.MonthPoints).HasColumnName("month_points");
+                e.Property(p => p.YearPoints).HasColumnName("year_points");
+                e.Property(p => p.TotalPoints).HasColumnName("total_points");
+                e.Property(p => p.LeaderboardOptOut).HasColumnName("leaderboard_opt_out");
+                e.Property(p => p.WorkAreaName).HasColumnName("work_area_name").HasMaxLength(256);
+                e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
+
+                e.HasOne(p => p.User)
+                 .WithOne()
+                 .HasForeignKey<UserPoints>(p => p.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ── PointTransaction ──────────────────────────────────────────────
+            modelBuilder.Entity<PointTransaction>(e =>
+            {
+                e.ToTable("point_transactions");
+                e.HasKey(t => t.Id);
+
+                e.Property(t => t.Id).HasColumnName("id");
+                e.Property(t => t.UserId).HasColumnName("user_id");
+                e.Property(t => t.ReportId).HasColumnName("report_id");
+                e.Property(t => t.Points).HasColumnName("points");
+                e.Property(t => t.Type).HasColumnName("type").IsRequired().HasMaxLength(20);
+                e.Property(t => t.Reason).HasColumnName("reason");
+                e.Property(t => t.CreatedAt).HasColumnName("created_at");
+
+                e.HasOne(t => t.User)
+                 .WithMany()
+                 .HasForeignKey(t => t.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(t => t.Report)
+                 .WithMany()
+                 .HasForeignKey(t => t.ReportId)
+                 .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<PasswordOtp>(e =>

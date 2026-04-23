@@ -7,6 +7,9 @@ namespace GarbageCollection.Common.Models
         public decimal TotalCapacity { get; set; }
         public bool IsActive { get; set; } = true;
         public int CollectorId { get; set; }
+        public Guid? WorkAreaId { get; set; }
+        public string? DispatchTime { get; set; } // e.g. "20:00"
+        public bool RouteOptimized { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

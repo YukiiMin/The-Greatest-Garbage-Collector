@@ -3,6 +3,7 @@ using System;
 using GarbageCollection.DataAccess.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GarbageCollection.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260422170344_AddPointTransactions")]
+    partial class AddPointTransactions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -229,6 +232,47 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.HasIndex("EnterpriseId");
 
                     b.ToTable("collectors", (string)null);
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.CollectorHub", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("EnterpriseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("enterprise_id");
+
+                    b.Property<decimal>("Lat")
+                        .HasColumnType("decimal(9,6)")
+                        .HasColumnName("lat");
+
+                    b.Property<decimal>("Lng")
+                        .HasColumnType("decimal(9,6)")
+                        .HasColumnName("lng");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("WorkAreaIds")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("work_area_ids");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.ToTable("collector_hubs", (string)null);
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Complaint", b =>
@@ -754,6 +798,17 @@ namespace GarbageCollection.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_collectors_enterprise_id");
+
+                    b.Navigation("Enterprise");
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.CollectorHub", b =>
+                {
+                    b.HasOne("GarbageCollection.Common.Models.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Enterprise");
                 });

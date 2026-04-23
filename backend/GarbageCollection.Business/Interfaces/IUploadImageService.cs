@@ -2,7 +2,7 @@
 
 namespace GarbageCollection.Business.Interfaces
 {
-    public interface ICloudinaryService
+    public interface IUploadImageService
     {
         /// <summary>
         /// Upload 1 ảnh lên Cloudinary, trả về URL công khai.
@@ -10,7 +10,7 @@ namespace GarbageCollection.Business.Interfaces
         Task<string> UploadImageAsync(IFormFile file, string folder = "waste-reports");
 
         /// <summary>
-        /// Upload tối đa 3 ảnh lên Cloudinary song song, trả về danh sách URL.
+        /// Upload nhiều ảnh lên Cloudinary song song, trả về danh sách URL.
         /// </summary>
         Task<List<string>> UploadImagesAsync(IList<IFormFile> files, string folder = "waste-reports");
 

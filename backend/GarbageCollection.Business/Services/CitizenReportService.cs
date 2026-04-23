@@ -1,6 +1,6 @@
 using GarbageCollection.Business.Interfaces;
 using GarbageCollection.Common.DTOs;
-using GarbageCollection.Common.DTOs.WasteReport;
+using GarbageCollection.Common.DTOs.CitizenReport;
 using GarbageCollection.Common.Enums;
 using GarbageCollection.Common.Exceptions;
 using GarbageCollection.Common.Models;
@@ -11,14 +11,14 @@ namespace GarbageCollection.Business.Services
     public class CitizenReportService : ICitizenReportService
     {
         private readonly ICitizenReportRepository _reportRepository;
-        private readonly ICloudinaryService _cloudinaryService;
+        private readonly IUploadImageService _uploadImageService;
 
         public CitizenReportService(
             ICitizenReportRepository reportRepository,
-            ICloudinaryService cloudinaryService)
+            IUploadImageService uploadImageService)
         {
             _reportRepository = reportRepository;
-            _cloudinaryService = cloudinaryService;
+            _uploadImageService = uploadImageService;
         }
 
         public async Task<CitizenReportResponseDto> CreateReportAsync(Guid userId, CreateCitizenReportDto dto)
@@ -26,7 +26,7 @@ namespace GarbageCollection.Business.Services
             if (dto.Types.Count > 4)
                 throw new ArgumentException("Tối đa 4 loại rác mỗi báo cáo.");
 
-            var imageUrls = await _cloudinaryService.UploadImagesAsync(dto.Images, "citizen-reports");
+            var imageUrls = await _uploadImageService.UploadImagesAsync(dto.Images, "citizen-reports");
 
             var report = new CitizenReport
             {
@@ -83,6 +83,9 @@ namespace GarbageCollection.Business.Services
             if (report.Status != ReportStatus.Pending)
                 throw new InvalidOperationException("cannot cancel report that is not pending");
 
+            if ((DateTime.UtcNow - report.CreatedAt).TotalMinutes > 10)
+                throw new InvalidOperationException("cannot cancel report after 10 minutes");
+
             await _reportRepository.DeleteAsync(report);
         }
 
@@ -102,8 +105,8 @@ namespace GarbageCollection.Business.Services
 
             if (dto.Images != null && dto.Images.Count > 0)
             {
-                await _cloudinaryService.DeleteImagesAsync(report.CitizenImageUrls);
-                report.CitizenImageUrls = await _cloudinaryService.UploadImagesAsync(dto.Images, "citizen-reports");
+                await _uploadImageService.DeleteImagesAsync(report.CitizenImageUrls);
+                report.CitizenImageUrls = await _uploadImageService.UploadImagesAsync(dto.Images, "citizen-reports");
             }
 
             if (dto.Types != null && dto.Types.Count > 0)
@@ -130,6 +133,10 @@ namespace GarbageCollection.Business.Services
 
             if (newStatus == ReportStatus.Assigned)
                 report.AssignAt = DateTime.UtcNow;
+            else if (newStatus == ReportStatus.Processing)
+                report.StartCollectingAt = DateTime.UtcNow;
+            else if (newStatus == ReportStatus.Collected)
+                report.CollectedAt = DateTime.UtcNow;
             else if (newStatus == ReportStatus.Completed)
                 report.CompleteAt = DateTime.UtcNow;
 
@@ -141,9 +148,11 @@ namespace GarbageCollection.Business.Services
         {
             var allowed = new Dictionary<ReportStatus, ReportStatus[]>
             {
-                { ReportStatus.Pending,   [ReportStatus.Assigned, ReportStatus.Rejected, ReportStatus.Cancel] },
-                { ReportStatus.Assigned,  [ReportStatus.Collected, ReportStatus.Failed, ReportStatus.Cancel]  },
-                { ReportStatus.Collected, [ReportStatus.Completed]                                            },
+                { ReportStatus.Pending,    [ReportStatus.Queue,      ReportStatus.Rejected, ReportStatus.Cancel] },
+                { ReportStatus.Queue,      [ReportStatus.Assigned,   ReportStatus.Rejected, ReportStatus.Cancel] },
+                { ReportStatus.Assigned,   [ReportStatus.Processing, ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.Processing, [ReportStatus.Collected,  ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.Collected,  [ReportStatus.Completed]                                              },
             };
 
             if (!allowed.TryGetValue(current, out var allowedNext) || !allowedNext.Contains(next))
@@ -169,7 +178,11 @@ namespace GarbageCollection.Business.Services
             Point              = report.Point,
             TeamId             = report.TeamId,
             ReportNote         = report.ReportNote,
+            AssignBy           = report.AssignBy,
             AssignAt           = report.AssignAt,
+            Deadline           = report.Deadline,
+            StartCollectingAt  = report.StartCollectingAt,
+            CollectedAt        = report.CollectedAt,
             ReportAt           = report.ReportAt,
             CollectorImageUrls = report.CollectorImageUrls,
             CompleteAt         = report.CompleteAt,
