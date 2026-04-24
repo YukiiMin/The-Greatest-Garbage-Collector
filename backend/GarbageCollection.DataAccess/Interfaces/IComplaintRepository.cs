@@ -6,12 +6,12 @@ namespace GarbageCollection.DataAccess.Interfaces
     public interface IComplaintRepository
     {
         Task<Complaint> CreateAsync(Complaint complaint);
-        Task<Complaint?> GetByIdAsync(Guid id);
         Task<Complaint> UpdateAsync(Complaint complaint);
+        Task<Complaint?> GetByIdAsync(Guid complaintId, CancellationToken ct = default);
         Task<(IEnumerable<Complaint> Items, int Total)> GetByReportIdPagedAsync(Guid reportId, int page, int limit);
         Task AppendMessageAsync(Guid complaintId, ComplaintMessage message, CancellationToken ct = default);
-
-        Task<Complaint?> GetDetailAsync(Guid complaintId, CancellationToken ct = default);
+        Task<Complaint?> GetByIdWithReportAsync(Guid id, CancellationToken ct);
+    Task SaveChangesAsync(CancellationToken ct);
         Task<IReadOnlyList<Complaint>> GetComplaintsAsync(
           ComplaintStatus status,
           int page,
@@ -22,7 +22,13 @@ namespace GarbageCollection.DataAccess.Interfaces
             ComplaintStatus status,
             CancellationToken ct = default);
 
-      
+        Task ResolveAsync(
+    Guid complaintId,
+    string adminResponse,
+    Guid adminId,
+    DateTime resolvedAt,
+    CancellationToken ct = default);
+
 
     }
 }

@@ -1,4 +1,5 @@
 using GarbageCollection.Common.Enums;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GarbageCollection.Common.Models
@@ -11,6 +12,8 @@ namespace GarbageCollection.Common.Models
         public Guid CitizenId { get; set; }
         [Column("report_id")]
         public Guid ReportId { get; set; }
+        [Required]
+        [MinLength(10)]
         public string Reason { get; set; } = string.Empty;
         public List<string> ImageUrls { get; set; } = [];
         public ComplaintStatus Status { get; set; } = ComplaintStatus.Pending;
@@ -18,6 +21,7 @@ namespace GarbageCollection.Common.Models
         public List<ComplaintMessage> Messages { get; set; } = [];
         public DateTime RequestAt { get; set; } = DateTime.UtcNow;
         public DateTime? ResponseAt { get; set; }
+
 
         // Navigation
         public CitizenReport Report { get; set; } = null!;

@@ -17,8 +17,8 @@
             var baseOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,               // set to false in dev if not using HTTPS
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
+Secure = true,
                 Path = "/"
             };
 

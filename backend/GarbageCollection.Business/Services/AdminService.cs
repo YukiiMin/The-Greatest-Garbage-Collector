@@ -2,7 +2,10 @@
 using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.DTOs.Complaint;
 using GarbageCollection.Common.Enums;
+using GarbageCollection.Common.Models;
 using GarbageCollection.DataAccess.Interfaces;
+using GarbageCollection.DataAccess.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -65,7 +68,8 @@ namespace GarbageCollection.Business.Services
                     description: "Invalid or missing access token.");
             }
 
-            if(user.Role != UserRole.Admin) { 
+            if (user.Role != UserRole.Admin)
+            {
                 _logger.LogWarning(
                     "Non-admin user {Email} (role: {Role}) attempted to access admin complaints.",
                     tokenEmail, user.Role);
@@ -75,7 +79,7 @@ namespace GarbageCollection.Business.Services
                     message: "forbidden",
                     code: "FORBIDDEN",
                     description: "User is not admin.");
-            }     
+            }
 
             // ── STEP 3: Validate query parameters ─────────────────────────────
             if (!ValidStatuses.Contains(request.Status))
@@ -111,7 +115,7 @@ namespace GarbageCollection.Business.Services
             // ── STEP 5 + 6: Query repository (list + count run concurrently) ──
             // Running both queries in parallel halves the DB round-trip overhead
             // at the cost of two concurrent connections from the pool.
-         
+
 
             var complaints = await _complaintRepository.GetComplaintsAsync(
     statusEnum, request.Page, request.Limit, ct);
@@ -122,10 +126,10 @@ namespace GarbageCollection.Business.Services
             {
                 Id = c.Id,
                 ReportId = c.ReportId,
-                UserEmail = c.Citizen?.Email, 
-                Title = c.Reason,           
+                UserEmail = c.Citizen?.Email,
+                Title = c.Reason,
                 Status = c.Status.ToString().ToUpperInvariant(),
-                CreatedAt = c.RequestAt      
+                CreatedAt = c.RequestAt
             }).ToList();
             // ── STEP 8: Return success payload ────────────────────────────────
             return GetComplaintsResult.Ok(new ComplaintResponseDto
@@ -139,110 +143,12 @@ namespace GarbageCollection.Business.Services
                 }
             });
         }
-        public async Task<(int, ApiResponse<ComplaintDetailResponseDto>)> GetComplaintDetailAsync(
-    string email,
-    Guid complaintId,
-    CancellationToken ct = default)
-        {
-            // ── STEP 1: Check user ─────────────────────────────
-            var user = await _userRepository.GetByEmailAsync(email, ct);
-
-            if (user == null)
-            {
-                return (401, ApiResponse<ComplaintDetailResponseDto>.Fail(
-                    "unauthorized",
-                    "UNAUTHORIZED",
-                    "User not found"));
-            }
-
-            if (user.Role != UserRole.Admin)
-            {
-                return (403, ApiResponse<ComplaintDetailResponseDto>.Fail(
-                    "forbidden",
-                    "FORBIDDEN",
-                    "User is not admin"));
-            }
-
-            // ── STEP 2: Get complaint ─────────────────────────
-            var complaint = await _complaintRepository.GetDetailAsync(complaintId, ct);
-
-            if (complaint == null)
-            {
-                return (404, ApiResponse<ComplaintDetailResponseDto>.Fail(
-                    "complaint not found",
-                    "NOT_FOUND",
-                    "Complaint does not exist"));
-            }
-
-            // ── STEP 3: Build timeline từ chính Complaint ─────
-            var timeline = new List<AuditLogDto>();
-
-            // CREATED
-            timeline.Add(new AuditLogDto
-            {
-                Action = "CREATED",
-                Actor = complaint.Citizen.Email,
-                Timestamp = complaint.RequestAt,
-                Note = "Complaint created"
-            });
-
-            // MESSAGES
-            if (complaint.Messages != null && complaint.Messages.Any())
-            {
-                timeline.AddRange(complaint.Messages.Select(m => new AuditLogDto
-                {
-                    Action = "MESSAGE",
-                    Actor = complaint.Citizen?.Email ?? "unknown",
-                    Timestamp = m.Time
-               
-                }));
-            }
-
-            // RESPONSE (Admin xử lý)
-            if (complaint.ResponseAt.HasValue)
-            {
-                timeline.Add(new AuditLogDto
-                {
-                    Action = complaint.Status.ToString().ToUpperInvariant(),
-                    Actor = "admin",
-                    Timestamp = complaint.ResponseAt.Value,
-                    Note = complaint.AdminResponse
-                });
-            }
-
-            // sort timeline
-            timeline = timeline.OrderBy(x => x.Timestamp).ToList();
-
-            // ── STEP 4: Map DTO ───────────────────────────────
-            var response = new ComplaintDetailResponseDto
-            {
-                Complaint = new ComplaintDetailDto
-                {
-                    Id = complaint.Id,
-                    Title = complaint.Reason,
-                    Description = complaint.Reason,
-                    ImageUrls = complaint.ImageUrls,
-                    Status = complaint.Status.ToString().ToUpperInvariant(),
-                    Messages = complaint.Messages
-                },
-                Report = new ReportDetailDto
-                {
-                    Id = complaint.Report.Id,
-                    WasteCategories = complaint.Report.Types
-    .Select(x => x.ToString().ToUpperInvariant())
-    .ToList(),
-                    CitizenImageUrls = complaint.Report.CitizenImageUrls,
-                    CollectorImageUrls = complaint.Report.CollectorImageUrls,
-                    Status = complaint.Report.Status.ToString().ToUpperInvariant(),
-                    CollectedAt = complaint.Report.CollectedAt,
-                    CitizenEmail = complaint.Report?.Citizen?.Email
-                },
-                AuditTimeline = timeline
-            };
-
-            return (200, ApiResponse<ComplaintDetailResponseDto>.Success(
-                "success",
-                response));
+           
         }
+
     }
-    }
+    
+
+
+    
+

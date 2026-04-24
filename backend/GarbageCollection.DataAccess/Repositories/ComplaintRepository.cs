@@ -98,5 +98,40 @@ namespace GarbageCollection.DataAccess.Repositories
 
                 .FirstOrDefaultAsync(c => c.Id == Guid.Parse(complaintId.ToString()), ct);
         }
+        public async Task ResolveAsync(
+          Guid complaintId,
+          string adminResponse,
+          
+          Guid adminId,
+          DateTime resolvedAt,
+          CancellationToken ct = default)
+        {
+            await _context.Complaints
+                     .Where(c => c.Id == complaintId)
+                     .ExecuteUpdateAsync(s => s
+                         .SetProperty(c => c.Status, ComplaintStatus.Approved)
+                         .SetProperty(c => c.AdminResponse, adminResponse)
+                         .SetProperty(c => c.ResponseAt, resolvedAt),
+                     ct);
+        }
+        public async Task<Complaint?> GetByIdAsync(Guid complaintId, CancellationToken ct = default)
+        {
+            return await _context.Complaints
+                .AsNoTracking()
+                .Include(c => c.Citizen)
+                .Include(c => c.Report)
+                    .ThenInclude(r => r.Citizen)
+                .FirstOrDefaultAsync(c => c.Id == complaintId, ct);
+        }
+        public async Task<Complaint?> GetByIdWithReportAsync(Guid id, CancellationToken ct)
+        {
+            return await _context.Complaints
+                .Include(c => c.Report)
+                .FirstOrDefaultAsync(c => c.Id == id, ct);
+        }
+
+    
+        public Task SaveChangesAsync(CancellationToken ct)
+            => _context.SaveChangesAsync(ct);
     }
 }

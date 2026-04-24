@@ -90,25 +90,6 @@ namespace GarbageCollection.API.Controllers
                 "success",
                 result.Payload!));
         }
-        [HttpGet("complaints/{id}")]
-        public async Task<IActionResult> GetComplaintDetail(
-    [FromRoute] Guid id,
-    CancellationToken ct)
-        {
-            var email = User.GetEmail();
-
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                return Unauthorized(ApiResponse<object>.Fail(
-                    "unauthorized",
-                    "UNAUTHORIZED",
-                    "Invalid token"));
-            }
-
-            var (statusCode, result) =
-                await _adminService.GetComplaintDetailAsync(email, id, ct);
-
-            return StatusCode(statusCode, result);
-        }
+       
     }
 }

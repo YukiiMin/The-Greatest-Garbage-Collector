@@ -99,7 +99,9 @@ namespace GarbageCollection.API.Controllers
             }
 
             // 🍪 set cookies
-            SetAuthCookies(result.AccessToken!, result.RefreshToken!);
+            CookieHelper.SetAuthCookies(
+                   Response, result.AccessToken!, result.RefreshToken!, _configuration);
+
 
             return Ok(ApiResponse<LocalRegisterResponseDto>.Success(
                 "account is created",
@@ -107,24 +109,8 @@ namespace GarbageCollection.API.Controllers
         }
 
         // ───────────────── HELPER ─────────────────
-        private void SetAuthCookies(string accessToken, string refreshToken)
-        {
-            Response.Cookies.Append("accessToken", accessToken, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = DateTime.UtcNow.AddMinutes(15) // match JwtHelper
-            });
-
-            Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = DateTime.UtcNow.AddDays(7)
-            });
-        }
+        
+        
 
         [Authorize]
         [HttpGet("account-auth/verification")]

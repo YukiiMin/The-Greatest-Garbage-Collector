@@ -422,7 +422,36 @@ namespace GarbageCollection.DataAccess.Data
                  .OnDelete(DeleteBehavior.Cascade);
             });
 
-          
+            modelBuilder.Entity<Complaint>(entity =>
+            {
+                entity.ToTable("complaints");
+
+                // FK columns
+                entity.Property(x => x.CitizenId)
+                    .HasColumnName("citizen_id");
+
+                entity.Property(x => x.ReportId)
+                    .HasColumnName("report_id");
+
+                // JSONB columns
+                entity.Property(e => e.ImageUrls)
+                    .HasColumnType("jsonb");
+
+                entity.Property(e => e.Messages)
+                    .HasColumnType("jsonb");
+
+                // Relations
+                entity.HasOne(x => x.Citizen)
+                    .WithMany()
+                    .HasForeignKey(x => x.CitizenId)
+                    .HasConstraintName("fk_complaint_citizen");
+
+                entity.HasOne(x => x.Report)
+                    .WithMany()
+                    .HasForeignKey(x => x.ReportId)
+                    .HasConstraintName("fk_complaint_report");
+            });
         }
     }
-}
+    }
+

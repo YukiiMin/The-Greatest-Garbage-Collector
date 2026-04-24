@@ -1,5 +1,6 @@
 ﻿using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.DTOs.Complaint;
+using GarbageCollection.Common.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,10 +28,11 @@ namespace GarbageCollection.Business.Interfaces
             string tokenEmail,
             GetComplaintsRequestDto request,
             CancellationToken ct = default);
+       // Task<(Guid, ApiResponse<ComplaintDetailResponseDto>)> GetComplaintDetailAsync(
+       //string email,
+       //Guid complaintId,
+       //CancellationToken ct = default);
 
-        Task<(int, ApiResponse<ComplaintDetailResponseDto>)> GetComplaintDetailAsync(
-       string email,
-       Guid complaintId,
-       CancellationToken ct = default);
+       
     }
 }
