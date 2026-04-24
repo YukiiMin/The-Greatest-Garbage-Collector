@@ -8,7 +8,7 @@ namespace GarbageCollection.Common.DTOs.Complaint
 {
     public class ReportDetailDto
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public List<string> WasteCategories { get; set; } = new();
         public string WasteUnit { get; set; } = string.Empty;
         public List<string> CitizenImageUrls { get; set; } = new();

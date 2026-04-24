@@ -4,7 +4,7 @@ namespace GarbageCollection.Common.Models
 {
     public class CitizenReport
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         public List<string> CitizenImageUrls { get; set; } = [];
 
@@ -21,15 +21,17 @@ namespace GarbageCollection.Common.Models
         public Guid CitizenId { get; set; }
         public User Citizen { get; set; } = null!;
 
-        public int? PointCategoryId { get; set; }
+
+        public Guid? PointCategoryId { get; set; }
+
 
         public int? Point { get; set; }
 
-        public int? TeamId { get; set; }
+        public Guid? TeamId { get; set; }
 
         public string? ReportNote { get; set; }
 
-        public string? AssignBy { get; set; }
+        public Guid? AssignBy { get; set; }
 
         public DateTime? AssignAt { get; set; }
 

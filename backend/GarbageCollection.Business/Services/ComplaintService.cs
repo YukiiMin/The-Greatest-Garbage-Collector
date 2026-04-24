@@ -22,7 +22,7 @@ namespace GarbageCollection.Business.Services
             _uploadImageService   = uploadImageService;
         }
 
-        public async Task<ComplaintResponseDto> CreateComplaintAsync(Guid citizenId, int reportId, CreateComplaintDto dto)
+        public async Task<ComplaintResponseDto> CreateComplaintAsync(Guid citizenId, Guid reportId, CreateComplaintDto dto)
         {
             _ = await _reportRepository.GetByIdAsync(reportId)
                 ?? throw new KeyNotFoundException("report not found");
@@ -47,7 +47,7 @@ namespace GarbageCollection.Business.Services
             return MapToResponse(created);
         }
 
-        public async Task<ComplaintsListResult> GetComplaintsByReportAsync(Guid citizenId, int reportId, int page, int limit)
+        public async Task<ComplaintsListResult> GetComplaintsByReportAsync(Guid citizenId, Guid reportId, int page, int limit)
         {
             _ = await _reportRepository.GetByIdAsync(reportId)
                 ?? throw new KeyNotFoundException("report not found");
@@ -67,7 +67,7 @@ namespace GarbageCollection.Business.Services
             };
         }
 
-        public async Task<ComplaintResponseDto> GetComplaintAsync(Guid citizenId, int reportId, int complaintId)
+        public async Task<ComplaintResponseDto> GetComplaintAsync(Guid citizenId, Guid reportId, Guid complaintId)
         {
             _ = await _reportRepository.GetByIdAsync(reportId)
                 ?? throw new KeyNotFoundException("report not found");
@@ -81,7 +81,7 @@ namespace GarbageCollection.Business.Services
             return MapToResponse(complaint);
         }
 
-        public async Task SendMessageAsync(Guid citizenId, int reportId, int complaintId, string message, CancellationToken ct = default)
+        public async Task SendMessageAsync(Guid citizenId, Guid reportId, Guid complaintId, string message, CancellationToken ct = default)
         {
             _ = await _reportRepository.GetByIdAsync(reportId)
                 ?? throw new KeyNotFoundException("report not found");

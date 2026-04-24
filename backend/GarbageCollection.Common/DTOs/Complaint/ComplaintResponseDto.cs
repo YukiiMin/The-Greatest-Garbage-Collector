@@ -4,9 +4,9 @@ namespace GarbageCollection.Common.DTOs.Complaint
 {
     public class ComplaintResponseDto
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public Guid CitizenId { get; set; }
-        public int ReportId { get; set; }
+        public Guid ReportId { get; set; }
         public string Reason { get; set; } = string.Empty;
         public List<string> ImageUrls { get; set; } = [];
         public string Status { get; set; } = string.Empty;

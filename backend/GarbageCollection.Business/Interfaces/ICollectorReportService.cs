@@ -6,7 +6,7 @@ namespace GarbageCollection.Business.Interfaces
     public interface ICollectorReportService
     {
         Task<CollectorReportsResponseDto> GetTodayReportsAsync(Guid userId);
-        Task<StartShiftResponseDto> StartShiftAsync(Guid userId, int teamId, DateOnly date);
-        Task<CollectReportResponseDto> CollectReportAsync(Guid userId, int reportId, List<IFormFile> images);
+        Task<StartShiftResponseDto> StartShiftAsync(Guid userId, Guid teamId, DateOnly date);
+        Task<CollectReportResponseDto> CollectReportAsync(Guid userId, Guid reportId, List<IFormFile> images);
     }
 }

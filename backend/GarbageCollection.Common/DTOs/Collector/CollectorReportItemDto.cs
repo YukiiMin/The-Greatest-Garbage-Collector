@@ -2,7 +2,7 @@ namespace GarbageCollection.Common.DTOs.Collector
 {
     public class CollectorReportItemDto
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public List<string> WasteCategories { get; set; } = [];
         public decimal? WasteUnit { get; set; }
         public string? UserAddress { get; set; }

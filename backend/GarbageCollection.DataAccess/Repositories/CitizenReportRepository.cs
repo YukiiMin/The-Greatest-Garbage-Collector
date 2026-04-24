@@ -22,7 +22,7 @@ namespace GarbageCollection.DataAccess.Repositories
             return report;
         }
 
-        public async Task<CitizenReport?> GetByIdAsync(int id)
+        public async Task<CitizenReport?> GetByIdAsync(Guid id)
         {
             return await _context.CitizenReports
                 .Include(r => r.User)

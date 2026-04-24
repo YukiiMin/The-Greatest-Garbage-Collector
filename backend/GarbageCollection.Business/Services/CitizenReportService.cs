@@ -44,7 +44,7 @@ namespace GarbageCollection.Business.Services
             return MapToResponse(created);
         }
 
-        public async Task<CitizenReportResponseDto?> GetReportByIdAsync(int id)
+        public async Task<CitizenReportResponseDto?> GetReportByIdAsync(Guid id)
         {
             var report = await _reportRepository.GetByIdAsync(id);
             return report is null ? null : MapToResponse(report);
@@ -72,7 +72,7 @@ namespace GarbageCollection.Business.Services
             };
         }
 
-        public async Task CancelReportAsync(Guid userId, int reportId)
+        public async Task CancelReportAsync(Guid userId, Guid reportId)
         {
             var report = await _reportRepository.GetByIdAsync(reportId)
                 ?? throw new KeyNotFoundException("report not found");
@@ -89,7 +89,7 @@ namespace GarbageCollection.Business.Services
             await _reportRepository.DeleteAsync(report);
         }
 
-        public async Task<CitizenReportResponseDto> UpdateReportAsync(Guid userId, int reportId, UpdateCitizenReportDto dto)
+        public async Task<CitizenReportResponseDto> UpdateReportAsync(Guid userId, Guid reportId, UpdateCitizenReportDto dto)
         {
             var report = await _reportRepository.GetByIdAsync(reportId)
                 ?? throw new KeyNotFoundException("report not found");
@@ -122,7 +122,7 @@ namespace GarbageCollection.Business.Services
             return MapToResponse(updated);
         }
 
-        public async Task<CitizenReportResponseDto> UpdateStatusAsync(int reportId, ReportStatus newStatus)
+        public async Task<CitizenReportResponseDto> UpdateStatusAsync(Guid reportId, ReportStatus newStatus)
         {
             var report = await _reportRepository.GetByIdAsync(reportId)
                 ?? throw new KeyNotFoundException($"Không tìm thấy báo cáo với ID {reportId}.");
@@ -133,7 +133,7 @@ namespace GarbageCollection.Business.Services
 
             if (newStatus == ReportStatus.Assigned)
                 report.AssignAt = DateTime.UtcNow;
-            else if (newStatus == ReportStatus.Processing)
+            else if (newStatus == ReportStatus.OnTheWay)
                 report.StartCollectingAt = DateTime.UtcNow;
             else if (newStatus == ReportStatus.Collected)
                 report.CollectedAt = DateTime.UtcNow;
@@ -150,8 +150,8 @@ namespace GarbageCollection.Business.Services
             {
                 { ReportStatus.Pending,    [ReportStatus.Queue,      ReportStatus.Rejected, ReportStatus.Cancel] },
                 { ReportStatus.Queue,      [ReportStatus.Assigned,   ReportStatus.Rejected, ReportStatus.Cancel] },
-                { ReportStatus.Assigned,   [ReportStatus.Processing, ReportStatus.Failed,   ReportStatus.Cancel] },
-                { ReportStatus.Processing, [ReportStatus.Collected,  ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.Assigned,   [ReportStatus.OnTheWay,  ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.OnTheWay,   [ReportStatus.Collected, ReportStatus.Failed,   ReportStatus.Cancel] },
                 { ReportStatus.Collected,  [ReportStatus.Completed]                                              },
             };
 

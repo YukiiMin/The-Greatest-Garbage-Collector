@@ -16,11 +16,11 @@ namespace GarbageCollection.DataAccess.Repositories
             _context = context;
         }
 
-        public Task<IEnumerable<CitizenReport>> GetActiveByTeamIdAsync(int teamId)
+        public Task<IEnumerable<CitizenReport>> GetActiveByTeamIdAsync(Guid teamId)
         {
             var activeStatuses = new[]
             {
-                ReportStatus.Processing,
+                ReportStatus.OnTheWay,
                 ReportStatus.Collected
             };
 
@@ -32,7 +32,7 @@ namespace GarbageCollection.DataAccess.Repositories
                 .ContinueWith(t => (IEnumerable<CitizenReport>)t.Result);
         }
 
-        public Task<int> CountAssignedTodayAsync(int teamId, DateOnly date)
+        public Task<int> CountAssignedTodayAsync(Guid teamId, DateOnly date)
         {
             var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             var end   = start.AddDays(1);
@@ -44,7 +44,7 @@ namespace GarbageCollection.DataAccess.Repositories
                     r.AssignAt >= start && r.AssignAt < end);
         }
 
-        public Task<bool> HasShiftStartedTodayAsync(int teamId, DateOnly date)
+        public Task<bool> HasOnTheWayTodayAsync(Guid teamId, DateOnly date)
         {
             var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             var end   = start.AddDays(1);
@@ -52,18 +52,18 @@ namespace GarbageCollection.DataAccess.Repositories
             return _context.CitizenReports
                 .AnyAsync(r =>
                     r.TeamId == teamId &&
-                    r.Status == ReportStatus.Processing &&
+                    r.Status == ReportStatus.OnTheWay &&
                     r.AssignAt >= start && r.AssignAt < end);
         }
 
-        public async Task<int> StartShiftAsync(int teamId, DateOnly date)
+        public async Task<int> StartShiftAsync(Guid teamId, DateOnly date)
         {
             var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             var end   = start.AddDays(1);
 
             return await _context.Database.ExecuteSqlRawAsync(
                 @"UPDATE citizen_reports
-                  SET status = 'Processing', updated_at = NOW()
+                  SET status = 'OnTheWay', updated_at = NOW()
                   WHERE team_id = @teamId
                     AND status = 'Assigned'
                     AND assign_at >= @start
@@ -81,7 +81,6 @@ namespace GarbageCollection.DataAccess.Repositories
             await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
-                // B7a: update report
                 report.Status             = ReportStatus.Collected;
                 report.CollectorImageUrls = imageUrls;
                 report.CollectedAt        = DateTime.UtcNow;
@@ -89,7 +88,6 @@ namespace GarbageCollection.DataAccess.Repositories
                 report.Point              = pointsEarned;
                 _context.CitizenReports.Update(report);
 
-                // B7b: upsert user_points
                 if (pointsEarned > 0)
                 {
                     var userPoints = await _context.UserPoints.FindAsync(report.UserId);
@@ -115,7 +113,6 @@ namespace GarbageCollection.DataAccess.Repositories
                         _context.UserPoints.Update(userPoints);
                     }
 
-                    // B7c: insert point_transaction
                     _context.PointTransactions.Add(new PointTransaction
                     {
                         UserId    = report.UserId,

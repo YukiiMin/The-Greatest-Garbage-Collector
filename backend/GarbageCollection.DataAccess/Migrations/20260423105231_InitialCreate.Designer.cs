@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GarbageCollection.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260423030727_RemoveCollectorHub")]
-    partial class RemoveCollectorHub
+    [Migration("20260423105231_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -65,20 +65,17 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.CitizenReport", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)")
-                        .HasColumnName("address");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("AssignAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("assign_at");
+
+                    b.Property<Guid?>("AssignBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assign_by");
 
                     b.Property<decimal?>("Capacity")
                         .HasColumnType("decimal(10,2)");
@@ -102,27 +99,19 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deadline");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<decimal?>("GpsLat")
-                        .HasColumnType("decimal(9,6)")
-                        .HasColumnName("gps_lat");
-
-                    b.Property<decimal?>("GpsLng")
-                        .HasColumnType("decimal(9,6)")
-                        .HasColumnName("gps_lng");
-
                     b.Property<int?>("Point")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("PointCategoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("PriorityFlag")
-                        .HasColumnType("boolean")
-                        .HasColumnName("priority_flag");
+                    b.Property<Guid?>("PointCategoryId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("ReportAt")
                         .HasColumnType("timestamp with time zone")
@@ -132,10 +121,6 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<int?>("RouteOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("route_order");
-
                     b.Property<DateTime?>("StartCollectingAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("start_collecting_at");
@@ -144,8 +129,8 @@ namespace GarbageCollection.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("TeamId")
-                        .HasColumnType("integer")
+                    b.Property<Guid?>("TeamId")
+                        .HasColumnType("uuid")
                         .HasColumnName("team_id");
 
                     b.Property<string>("Types")
@@ -168,18 +153,20 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Collector", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
                         .HasColumnName("address");
+
+                    b.Property<int?>("AssignedCapacity")
+                        .HasColumnType("integer")
+                        .HasColumnName("assigned_capacity");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -191,8 +178,8 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("character varying(320)")
                         .HasColumnName("email");
 
-                    b.Property<int>("EnterpriseId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uuid")
                         .HasColumnName("enterprise_id");
 
                     b.Property<decimal?>("Latitude")
@@ -236,11 +223,9 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Complaint", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("AdminResponse")
                         .HasColumnType("text")
@@ -266,8 +251,8 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("reason");
 
-                    b.Property<int>("ReportId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("ReportId")
+                        .HasColumnType("uuid")
                         .HasColumnName("report_id");
 
                     b.Property<DateTime>("RequestAt")
@@ -338,12 +323,10 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Enterprise", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
                         .IsRequired()
@@ -400,20 +383,26 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.PointCategory", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<int>("EnterpriseId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uuid")
                         .HasColumnName("enterprise_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDelete")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_delete");
 
                     b.Property<string>("Mechanic")
                         .IsRequired()
@@ -456,8 +445,8 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("text")
                         .HasColumnName("reason");
 
-                    b.Property<int>("ReportId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("ReportId")
+                        .HasColumnType("uuid")
                         .HasColumnName("report_id");
 
                     b.Property<string>("Type")
@@ -530,12 +519,12 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
-                    b.Property<int>("EnterpriseId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uuid")
                         .HasColumnName("enterprise_id");
 
-                    b.Property<int>("TeamId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uuid")
                         .HasColumnName("team_id");
 
                     b.HasKey("UserId");
@@ -549,15 +538,13 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Team", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CollectorId")
-                        .HasColumnType("integer")
+                    b.Property<Guid>("CollectorId")
+                        .HasColumnType("uuid")
                         .HasColumnName("collector_id");
 
                     b.Property<DateTime>("CreatedAt")
@@ -569,9 +556,17 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("character varying(10)")
                         .HasColumnName("dispatch_time");
 
+                    b.Property<bool>("InWork")
+                        .HasColumnType("boolean")
+                        .HasColumnName("in_work");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
+
+                    b.Property<DateTime?>("LastFinishTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_finish_time");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -582,6 +577,10 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.Property<bool>("RouteOptimized")
                         .HasColumnType("boolean")
                         .HasColumnName("route_optimized");
+
+                    b.Property<DateTime?>("StartWorkingTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_working_time");
 
                     b.Property<decimal>("TotalCapacity")
                         .HasColumnType("decimal(10,2)")
@@ -613,6 +612,10 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
                         .HasColumnName("address");
+
+                    b.Property<string>("Area")
+                        .HasColumnType("text")
+                        .HasColumnName("area");
 
                     b.Property<string>("AvatarUrl")
                         .HasMaxLength(1024)
@@ -675,6 +678,10 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
+
+                    b.Property<string>("WorkArea")
+                        .HasColumnType("text")
+                        .HasColumnName("work_area");
 
                     b.HasKey("Id");
 

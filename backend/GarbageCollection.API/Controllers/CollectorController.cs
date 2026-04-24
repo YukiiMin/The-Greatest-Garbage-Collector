@@ -56,7 +56,7 @@ namespace GarbageCollection.API.Controllers
         /// <summary>
         /// Collector xác nhận đã thu gom — upload ảnh, chuyển trạng thái sang COLLECTED, cộng điểm citizen.
         /// </summary>
-        [HttpPatch("reports/{id:int}/collect")]
+        [HttpPatch("reports/{id:guid}/collect")]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<CollectReportResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -64,7 +64,7 @@ namespace GarbageCollection.API.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status413RequestEntityTooLarge)]
-        public async Task<IActionResult> CollectReport(int id, [FromForm] List<IFormFile> images)
+        public async Task<IActionResult> CollectReport(Guid id, [FromForm] List<IFormFile> images)
         {
             // B5: validate images
             if (images is null || images.Count == 0)

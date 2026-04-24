@@ -83,7 +83,7 @@ namespace GarbageCollection.DataAccess.Data
                 entity.Property(e => e.Capacity).HasColumnType("decimal(10,2)");
                 entity.Property(e => e.Status).HasConversion<string>();
                 entity.Property(e => e.UserId).HasColumnName("citizen_id");
-                entity.Property(e => e.AssignBy).HasColumnName("assign_by").HasMaxLength(256);
+                entity.Property(e => e.AssignBy).HasColumnName("assign_by");
                 entity.Property(e => e.AssignAt).HasColumnName("assign_at");
                 entity.Property(e => e.Deadline).HasColumnName("deadline");
                 entity.Property(e => e.StartCollectingAt).HasColumnName("start_collecting_at");
@@ -159,6 +159,8 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(p => p.Id).HasColumnName("id");
                 e.Property(p => p.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
                 e.Property(p => p.EnterpriseId).HasColumnName("enterprise_id");
+                e.Property(p => p.IsActive).HasColumnName("is_active");
+                e.Property(p => p.IsDelete).HasColumnName("is_delete");
                 e.Property(p => p.CreatedAt).HasColumnName("created_at");
                 e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
 
@@ -236,6 +238,7 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(c => c.Latitude).HasColumnName("latitude").HasColumnType("decimal(9,6)");
                 e.Property(c => c.Longitude).HasColumnName("longitude").HasColumnType("decimal(9,6)");
                 e.Property(c => c.WorkArea).HasColumnName("work_area").IsRequired();
+                e.Property(c => c.AssignedCapacity).HasColumnName("assigned_capacity");
                 e.Property(c => c.EnterpriseId).HasColumnName("enterprise_id");
                 e.Property(c => c.CreatedAt).HasColumnName("created_at");
                 e.Property(c => c.UpdatedAt).HasColumnName("updated_at");
@@ -264,6 +267,9 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(t => t.WorkAreaId).HasColumnName("work_area_id");
                 e.Property(t => t.DispatchTime).HasColumnName("dispatch_time").HasMaxLength(10);
                 e.Property(t => t.RouteOptimized).HasColumnName("route_optimized");
+                e.Property(t => t.InWork).HasColumnName("in_work");
+                e.Property(t => t.StartWorkingTime).HasColumnName("start_working_time");
+                e.Property(t => t.LastFinishTime).HasColumnName("last_finish_time");
                 e.Property(t => t.CreatedAt).HasColumnName("created_at");
                 e.Property(t => t.UpdatedAt).HasColumnName("updated_at");
 
@@ -291,6 +297,8 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(u => u.LoginTerm).HasColumnName("login_term");
                 e.Property(u => u.Role).HasColumnName("role").IsRequired().HasMaxLength(64);
                 e.Property(u => u.Address).HasColumnName("address").HasMaxLength(512);
+                e.Property(u => u.WorkArea).HasColumnName("work_area");
+                e.Property(u => u.Area).HasColumnName("area");
                 e.Property(u => u.CreatedAt).HasColumnName("created_at");
                 e.Property(u => u.UpdatedAt).HasColumnName("updated_at");
 

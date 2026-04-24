@@ -92,7 +92,7 @@ namespace GarbageCollection.API.Controllers
         }
         [HttpGet("complaints/{id}")]
         public async Task<IActionResult> GetComplaintDetail(
-    [FromRoute] int id,
+    [FromRoute] Guid id,
     CancellationToken ct)
         {
             var email = User.GetEmail();

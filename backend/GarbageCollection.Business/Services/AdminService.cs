@@ -122,7 +122,7 @@ namespace GarbageCollection.Business.Services
             {
                 Id = c.Id,
                 ReportId = c.ReportId,
-                UserEmail = c.Citizen.Email, 
+                UserEmail = c.Citizen?.Email, 
                 Title = c.Reason,           
                 Status = c.Status.ToString().ToUpperInvariant(),
                 CreatedAt = c.RequestAt      
@@ -141,7 +141,7 @@ namespace GarbageCollection.Business.Services
         }
         public async Task<(int, ApiResponse<ComplaintDetailResponseDto>)> GetComplaintDetailAsync(
     string email,
-    int complaintId,
+    Guid complaintId,
     CancellationToken ct = default)
         {
             // ── STEP 1: Check user ─────────────────────────────
@@ -192,7 +192,7 @@ namespace GarbageCollection.Business.Services
                 timeline.AddRange(complaint.Messages.Select(m => new AuditLogDto
                 {
                     Action = "MESSAGE",
-                    Actor = m.Sender ?? "unknown",
+                    Actor = complaint.Citizen?.Email ?? "unknown",
                     Timestamp = m.Time
                
                 }));
@@ -235,7 +235,7 @@ namespace GarbageCollection.Business.Services
                     CollectorImageUrls = complaint.Report.CollectorImageUrls,
                     Status = complaint.Report.Status.ToString().ToUpperInvariant(),
                     CollectedAt = complaint.Report.CollectedAt,
-                    CitizenEmail = complaint.Report.Citizen.Email
+                    CitizenEmail = complaint.Report?.Citizen?.Email
                 },
                 AuditTimeline = timeline
             };

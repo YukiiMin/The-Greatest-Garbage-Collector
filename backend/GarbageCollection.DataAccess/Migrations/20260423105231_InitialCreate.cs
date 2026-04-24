@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -21,7 +20,9 @@ namespace GarbageCollection.DataAccess.Migrations
                     otp_code = table.Column<string>(type: "character varying(6)", maxLength: 6, nullable: false),
                     expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     is_used = table.Column<bool>(type: "boolean", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Count = table.Column<int>(type: "integer", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -32,8 +33,7 @@ namespace GarbageCollection.DataAccess.Migrations
                 name: "enterprises",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     phone_number = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: false),
@@ -66,20 +66,22 @@ namespace GarbageCollection.DataAccess.Migrations
                     login_term = table.Column<int>(type: "integer", nullable: false),
                     role = table.Column<int>(type: "integer", maxLength: 64, nullable: false),
                     address = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
+                    work_area = table.Column<string>(type: "text", nullable: true),
+                    area = table.Column<string>(type: "text", nullable: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_users", x => x.id);
+                    table.UniqueConstraint("AK_users_email", x => x.email);
                 });
 
             migrationBuilder.CreateTable(
                 name: "collectors",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     phone_number = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: false),
@@ -87,7 +89,8 @@ namespace GarbageCollection.DataAccess.Migrations
                     latitude = table.Column<decimal>(type: "numeric(9,6)", nullable: true),
                     longitude = table.Column<decimal>(type: "numeric(9,6)", nullable: true),
                     work_area = table.Column<string>(type: "text", nullable: false),
-                    enterprise_id = table.Column<int>(type: "integer", nullable: false),
+                    assigned_capacity = table.Column<int>(type: "integer", nullable: true),
+                    enterprise_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -106,11 +109,12 @@ namespace GarbageCollection.DataAccess.Migrations
                 name: "point_categories",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     mechanic = table.Column<string>(type: "jsonb", nullable: false),
-                    enterprise_id = table.Column<int>(type: "integer", nullable: false),
+                    enterprise_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    is_delete = table.Column<bool>(type: "boolean", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -129,22 +133,25 @@ namespace GarbageCollection.DataAccess.Migrations
                 name: "citizen_reports",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     CitizenImageUrls = table.Column<string>(type: "text", nullable: false),
                     Types = table.Column<string>(type: "text", nullable: false),
                     Capacity = table.Column<decimal>(type: "numeric(10,2)", nullable: true),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Status = table.Column<string>(type: "text", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PointCategoryId = table.Column<int>(type: "integer", nullable: true),
+                    citizen_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PointCategoryId = table.Column<Guid>(type: "uuid", nullable: true),
                     Point = table.Column<int>(type: "integer", nullable: true),
-                    TeamId = table.Column<int>(type: "integer", nullable: true),
+                    team_id = table.Column<Guid>(type: "uuid", nullable: true),
                     ReportNote = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    AssignAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ReportAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    assign_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    assign_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    deadline = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    start_collecting_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    collected_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    report_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CollectorImageUrls = table.Column<string>(type: "text", nullable: false),
-                    CompleteAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    complete_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
@@ -152,10 +159,33 @@ namespace GarbageCollection.DataAccess.Migrations
                 {
                     table.PrimaryKey("PK_citizen_reports", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_citizen_reports_users_UserId",
-                        column: x => x.UserId,
+                        name: "FK_citizen_reports_users_citizen_id",
+                        column: x => x.citizen_id,
                         principalTable: "users",
                         principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "password_otp",
+                columns: table => new
+                {
+                    email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    otp_code = table.Column<string>(type: "character varying(72)", maxLength: 72, nullable: false),
+                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    is_used = table.Column<bool>(type: "boolean", nullable: false),
+                    count = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    last_updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_password_otp", x => x.email);
+                    table.ForeignKey(
+                        name: "FK_password_otp_users_email",
+                        column: x => x.email,
+                        principalTable: "users",
+                        principalColumn: "email",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -183,15 +213,44 @@ namespace GarbageCollection.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "user_points",
+                columns: table => new
+                {
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    week_points = table.Column<int>(type: "integer", nullable: false),
+                    month_points = table.Column<int>(type: "integer", nullable: false),
+                    year_points = table.Column<int>(type: "integer", nullable: false),
+                    total_points = table.Column<int>(type: "integer", nullable: false),
+                    leaderboard_opt_out = table.Column<bool>(type: "boolean", nullable: false),
+                    work_area_name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_user_points", x => x.user_id);
+                    table.ForeignKey(
+                        name: "FK_user_points_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "teams",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
                     name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     total_capacity = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
-                    collector_id = table.Column<int>(type: "integer", nullable: false),
+                    collector_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    work_area_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    dispatch_time = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
+                    route_optimized = table.Column<bool>(type: "boolean", nullable: false),
+                    in_work = table.Column<bool>(type: "boolean", nullable: false),
+                    start_working_time = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    last_finish_time = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -210,14 +269,14 @@ namespace GarbageCollection.DataAccess.Migrations
                 name: "complaints",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     citizen_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    report_id = table.Column<int>(type: "integer", nullable: false),
+                    report_id = table.Column<Guid>(type: "uuid", nullable: false),
                     reason = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
                     image_urls = table.Column<string>(type: "text", nullable: false),
                     status = table.Column<string>(type: "text", nullable: false),
                     admin_response = table.Column<string>(type: "text", nullable: true),
+                    messages = table.Column<string>(type: "jsonb", nullable: false),
                     request_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     response_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
@@ -239,12 +298,41 @@ namespace GarbageCollection.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "point_transactions",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    report_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    points = table.Column<int>(type: "integer", nullable: false),
+                    type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    reason = table.Column<string>(type: "text", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_point_transactions", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_point_transactions_citizen_reports_report_id",
+                        column: x => x.report_id,
+                        principalTable: "citizen_reports",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_point_transactions_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "staffs",
                 columns: table => new
                 {
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    enterprise_id = table.Column<int>(type: "integer", nullable: false),
-                    team_id = table.Column<int>(type: "integer", nullable: false)
+                    enterprise_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    team_id = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -270,9 +358,9 @@ namespace GarbageCollection.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_citizen_reports_UserId",
+                name: "IX_citizen_reports_citizen_id",
                 table: "citizen_reports",
-                column: "UserId");
+                column: "citizen_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_collectors_email",
@@ -310,6 +398,16 @@ namespace GarbageCollection.DataAccess.Migrations
                 name: "IX_point_categories_enterprise_id",
                 table: "point_categories",
                 column: "enterprise_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_point_transactions_report_id",
+                table: "point_transactions",
+                column: "report_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_point_transactions_user_id",
+                table: "point_transactions",
+                column: "user_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_refresh_tokens_token_hash",
@@ -359,13 +457,22 @@ namespace GarbageCollection.DataAccess.Migrations
                 name: "email_otps");
 
             migrationBuilder.DropTable(
+                name: "password_otp");
+
+            migrationBuilder.DropTable(
                 name: "point_categories");
+
+            migrationBuilder.DropTable(
+                name: "point_transactions");
 
             migrationBuilder.DropTable(
                 name: "refresh_tokens");
 
             migrationBuilder.DropTable(
                 name: "staffs");
+
+            migrationBuilder.DropTable(
+                name: "user_points");
 
             migrationBuilder.DropTable(
                 name: "citizen_reports");

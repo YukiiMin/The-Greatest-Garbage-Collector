@@ -30,7 +30,7 @@ namespace GarbageCollection.Business.Interfaces
 
         Task<(int, ApiResponse<ComplaintDetailResponseDto>)> GetComplaintDetailAsync(
        string email,
-       int complaintId,
+       Guid complaintId,
        CancellationToken ct = default);
     }
 }

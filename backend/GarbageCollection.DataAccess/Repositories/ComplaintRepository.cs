@@ -24,7 +24,7 @@ namespace GarbageCollection.DataAccess.Repositories
             return complaint;
         }
 
-        public async Task<Complaint?> GetByIdAsync(int id)
+        public async Task<Complaint?> GetByIdAsync(Guid id)
             => await _context.Complaints
                 .Include(c => c.Citizen)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -36,7 +36,7 @@ namespace GarbageCollection.DataAccess.Repositories
             return complaint;
         }
 
-        public async Task<(IEnumerable<Complaint> Items, int Total)> GetByReportIdPagedAsync(int reportId, int page, int limit)
+        public async Task<(IEnumerable<Complaint> Items, int Total)> GetByReportIdPagedAsync(Guid reportId, int page, int limit)
         {
             var query = _context.Complaints
                 .Where(c => c.ReportId == reportId)
@@ -51,7 +51,7 @@ namespace GarbageCollection.DataAccess.Repositories
             return (items, total);
         }
 
-        public async Task AppendMessageAsync(int complaintId, ComplaintMessage message, CancellationToken ct = default)
+        public async Task AppendMessageAsync(Guid complaintId, ComplaintMessage message, CancellationToken ct = default)
         {
             var json = JsonSerializer.Serialize(new[] { message });
             await _context.Database.ExecuteSqlRawAsync(
@@ -83,7 +83,7 @@ namespace GarbageCollection.DataAccess.Repositories
                .CountAsync(c => c.Status == status, ct);
 
         public async Task<Complaint?> GetDetailAsync(
-           int complaintId,
+           Guid complaintId,
            CancellationToken ct = default)
         {
             return await _context.Complaints
@@ -96,7 +96,7 @@ namespace GarbageCollection.DataAccess.Repositories
                 .Include(c => c.Report)
                     .ThenInclude(r => r.Citizen)
 
-                .FirstOrDefaultAsync(c => c.Id == complaintId, ct);
+                .FirstOrDefaultAsync(c => c.Id == Guid.Parse(complaintId.ToString()), ct);
         }
     }
 }
