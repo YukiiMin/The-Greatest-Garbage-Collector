@@ -21,10 +21,11 @@ namespace GarbageCollection.API.Controllers
         private readonly ILocalAuthService _localAuthService;
         private readonly ILocalLoginService _localLoginService;
         private readonly IPasswordOtpService _passwordOtpService;
-        private readonly IResendOtpService _resendOtpService;   
+        private readonly IResendOtpService _resendOtpService;
         private readonly IAccountVerificationService _accountVerificationService;
+        private readonly IAdminService _adminService;
 
-        public AuthController(IAuthService authService, IConfiguration configuration, IVerifyEmailService verifyEmailService, ILocalLoginService localLoginService, IPasswordOtpService passwordOtpService, ILocalAuthService localAuthService, IResendOtpService resendOtpService, IAccountVerificationService accountVerificationService)
+        public AuthController(IAuthService authService, IConfiguration configuration, IVerifyEmailService verifyEmailService, ILocalLoginService localLoginService, IPasswordOtpService passwordOtpService, ILocalAuthService localAuthService, IResendOtpService resendOtpService, IAccountVerificationService accountVerificationService, IAdminService adminService)
 
 
         {
@@ -34,6 +35,7 @@ namespace GarbageCollection.API.Controllers
             _localLoginService = localLoginService;
             _localAuthService = localAuthService;
             _passwordOtpService = passwordOtpService;
+            _adminService = adminService;
             _resendOtpService = resendOtpService;
             _accountVerificationService = accountVerificationService;
 
@@ -111,7 +113,7 @@ namespace GarbageCollection.API.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddMinutes(15) // match JwtHelper
             });
 
@@ -119,7 +121,7 @@ namespace GarbageCollection.API.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddDays(7)
             });
         }
@@ -389,6 +391,8 @@ namespace GarbageCollection.API.Controllers
             var (statusCode, response) = await _authService.ResetPasswordAsync(request, ct);
             return StatusCode(statusCode, response);
         }
+
+        
     }
 
 }

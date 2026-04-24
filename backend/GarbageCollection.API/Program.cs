@@ -161,6 +161,7 @@ builder.Services.AddScoped<IVerifyEmailService, VerifyEmailService>();
 builder.Services.AddScoped<IEmailService,       SmtpEmailService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ICollectorReportService, CollectorReportService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 builder.Services.AddScoped<IResendOtpService, ResendOtpService>();
 builder.Services.AddScoped<IPasswordOtpService, PasswordOtpService>();
