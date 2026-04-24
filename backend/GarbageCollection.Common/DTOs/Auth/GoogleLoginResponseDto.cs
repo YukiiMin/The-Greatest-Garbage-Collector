@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GarbageCollection.Common.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,5 +24,7 @@ namespace GarbageCollection.Common.DTOs.Auth
 
         [JsonPropertyName("address")]
         public string? Address { get; set; }
+
+        public UserRole Role { get; set; }
     }
 }

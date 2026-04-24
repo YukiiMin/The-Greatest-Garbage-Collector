@@ -160,7 +160,8 @@ namespace GarbageCollection.Business.Services
                     Email = user.Email,
                     FullName = user.FullName,
                     AvatarUrl = user.AvatarUrl,
-                    Address = user.Address
+                    Address = user.Address,
+                    Role = user.Role.ToString()
                 },
                 accessToken: accessToken,
                 refreshToken: refreshJwt);

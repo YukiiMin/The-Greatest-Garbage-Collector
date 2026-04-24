@@ -159,7 +159,8 @@ namespace GarbageCollection.Business.Services
                 HasPassword = user.PasswordHash is not null,
                 FullName = user.FullName,
                 AvatarUrl = user.AvatarUrl,
-                Address = user.Address
+                Address = user.Address,
+                 Role = user.Role
             };
 
             return GoogleAuthResult.Ok(responsePayload, accessToken, refreshJwt);
