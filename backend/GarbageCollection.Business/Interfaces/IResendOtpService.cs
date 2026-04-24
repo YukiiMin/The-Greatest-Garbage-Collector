@@ -30,7 +30,6 @@ namespace GarbageCollection.Business.Interfaces
         /// <param name="ct">Cancellation token.</param>
         Task<ResendOtpResult> ResendOtpAsync(
             ResendOtpRequestDto request,
-            string tokenEmail,
             CancellationToken ct = default);
     }
 }

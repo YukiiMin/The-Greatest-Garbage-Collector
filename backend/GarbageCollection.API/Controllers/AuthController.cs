@@ -277,7 +277,7 @@ namespace GarbageCollection.API.Controllers
                 result.Payload!));
         }
 
-        [Authorize]
+       
         [HttpPost("local-auth/email-otp")]
         [ProducesResponseType(typeof(ApiResponse<ResendOtpResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -299,17 +299,9 @@ namespace GarbageCollection.API.Controllers
 
             // ── Extract validated JWT claim (HTTP concern — controller only) ───
             // [Authorize] + middleware guarantee the token is authentic before we reach here.
-            var tokenEmail = User.GetEmail();
-            if (tokenEmail is null)
-            {
-                return Unauthorized(ApiResponse<object>.Fail(
-                    "data is unvalid",
-                    "UNAUTHORIZED",
-                    "Access token does not contain a valid email claim."));
-            }
 
             // ── Delegate ALL business logic to the service ────────────────────
-            var result = await _resendOtpService.ResendOtpAsync(request.Data, tokenEmail, ct);
+            var result = await _resendOtpService.ResendOtpAsync(request.Data, ct);
 
             if (!result.Succeeded)
             {

@@ -65,99 +65,79 @@ namespace GarbageCollection.Business.Services
         // ─────────────────────────────────────────────────────────────────────
 
         public async Task<ResendOtpResult> ResendOtpAsync(
-            ResendOtpRequestDto request,
-            string tokenEmail,
-            CancellationToken ct = default)
+    ResendOtpRequestDto request,
+    CancellationToken ct = default)
         {
-            // ── STEP 1: Validate email format ─────────────────────────────────
-            if (!ValidationHelper.IsValidEmail(request.Email))
+            // ── STEP 1: Validate email ───────────────────────────────
+            if (string.IsNullOrWhiteSpace(request.Email) ||
+                !ValidationHelper.IsValidEmail(request.Email))
             {
                 return ResendOtpResult.Failure(
-                    statusCode: 401,
-                    message: "data is unvalid",
-                    code: "INVALID_DATA",
-                    description: "Email format is invalid or empty.");
+                    422,
+                    "invalid request",
+                    "INVALID_DATA",
+                    "Email format is invalid or empty.");
             }
 
-            // ── STEP 3: Compare request email with token email ────────────────
-            var normalisedRequest = request.Email.Trim().ToLowerInvariant();
-            var normalisedToken = tokenEmail.Trim().ToLowerInvariant();
+            var email = request.Email.Trim().ToLowerInvariant();
 
-            if (normalisedRequest != normalisedToken)
-            {
-                _logger.LogWarning(
-                    "OTP resend blocked — email mismatch. Token: {TokenEmail}, Request: {RequestEmail}.",
-                    normalisedToken, normalisedRequest);
-
-                return ResendOtpResult.Failure(
-                    statusCode: 401,
-                    message: "data is unvalid",
-                    code: "EMAIL_MISMATCH",
-                    description: "Request email does not match the authenticated token.");
-            }
-
-            // ── STEP 4: User existence check → 404 ───────────────────────────
-            var user = await _userRepository.GetByEmailAsync(normalisedRequest, ct);
+            // ── STEP 2: Check user exists ────────────────────────────
+            var user = await _userRepository.GetByEmailAsync(email, ct);
             if (user is null)
             {
-                _logger.LogWarning(
-                    "OTP resend failed — user not found: {Email}.", normalisedRequest);
-
                 return ResendOtpResult.Failure(
-                    statusCode: 404,
-                    message: "account not existed",
-                    code: "USER_NOT_FOUND",
-                    description: "No account found for this email address.");
+                    404,
+                    "account not existed",
+                    "USER_NOT_FOUND",
+                    "No account found for this email address.");
             }
 
-            // ── STEP 5: Already verified? → 409 ──────────────────────────────
+            // ── STEP 3: Already verified? ────────────────────────────
             if (user.EmailVerified)
             {
                 return ResendOtpResult.Failure(
-                    statusCode: 409,
-                    message: "account verified before",
-                    code: "EMAIL_ALREADY_VERIFIED",
-                    description: "This email address has already been verified.");
+                    409,
+                    "account verified before",
+                    "EMAIL_ALREADY_VERIFIED",
+                    "This email address has already been verified.");
             }
 
-            // ── STEP 6 + 7: OTP create or update with rate limiting ───────────
+            // ── STEP 4: OTP + Rate limit ─────────────────────────────
             var now = DateTime.UtcNow;
-            var existingOtp = await _emailOtpRepository.GetLatestByEmailAsync(normalisedRequest, ct);
+            var existingOtp = await _emailOtpRepository.GetLatestByEmailAsync(email, ct);
 
             if (existingOtp is null)
             {
-                // ── CASE A: No prior OTP record — create fresh ────────────────
-                await CreateAndSendOtpAsync(normalisedRequest, now, ct);
+                await CreateAndSendOtpAsync(email, now, ct);
             }
             else
             {
-                // ── CASE B: Existing record — apply rate limiting ─────────────
                 var windowStart = existingOtp.UpdatedAt ?? existingOtp.CreatedAt;
                 var windowElapsed = (now - windowStart).TotalHours > _rateLimitWindowHours;
 
                 if (!windowElapsed && existingOtp.Count >= _rateLimitMaxAttempts)
                 {
-                    // Within window and at/over the limit → reject
-                    _logger.LogWarning(
-                        "OTP rate limit exceeded for {Email}. Count: {Count}, Window: {Hours}h.",
-                        normalisedRequest, existingOtp.Count, _rateLimitWindowHours);
-
                     return ResendOtpResult.Failure(
-                        statusCode: 429,
-                        message: "reach limitation of generation",
-                        code: "OTP_RATE_LIMIT_EXCEEDED",
-                        description: $"OTP generation limit of {_rateLimitMaxAttempts} per " +
-                                     $"{_rateLimitWindowHours}h exceeded. Please try again later.");
+                        429,
+                        "reach limitation of generation",
+                        "OTP_RATE_LIMIT_EXCEEDED",
+                        $"OTP limit {_rateLimitMaxAttempts}/{_rateLimitWindowHours}h exceeded.");
                 }
 
-                // Window elapsed → reset count to 1; window active → increment count
                 var newCount = windowElapsed ? 1 : existingOtp.Count + 1;
-                await UpdateAndSendOtpAsync(existingOtp.Id, normalisedRequest, now, newCount, ct);
+
+                await UpdateAndSendOtpAsync(
+                    existingOtp.Id,
+                    email,
+                    now,
+                    newCount,
+                    ct);
             }
 
-            _logger.LogInformation("OTP resent successfully for {Email}.", normalisedRequest);
-
-            return ResendOtpResult.Ok(new ResendOtpResponseDto { Email = normalisedRequest });
+            return ResendOtpResult.Ok(new ResendOtpResponseDto
+            {
+                Email = email
+            });
         }
 
         // ── Private helpers ───────────────────────────────────────────────────

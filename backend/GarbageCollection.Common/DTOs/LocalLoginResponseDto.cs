@@ -20,5 +20,8 @@ namespace GarbageCollection.Common.DTOs
 
         [JsonPropertyName("address")]
         public string? Address { get; set; }
+
+        [JsonPropertyName("role")]
+        public string Role { get; set; } = default!;
     }
 }
