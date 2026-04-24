@@ -1,3 +1,4 @@
+using GarbageCollection.Common.Enums;
 using GarbageCollection.Common.Models;
 
 namespace GarbageCollection.DataAccess.Interfaces

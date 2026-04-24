@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace GarbageCollection.Common.DTOs.Complaint
 {
     public class ComplaintResponseDto
@@ -11,5 +13,10 @@ namespace GarbageCollection.Common.DTOs.Complaint
         public string? AdminResponse { get; set; }
         public DateTime RequestAt { get; set; }
         public DateTime? ResponseAt { get; set; }
+        [JsonPropertyName("complaints")]
+        public IReadOnlyList<ComplaintItemDto> Complaints { get; set; } = [];
+
+        [JsonPropertyName("pagination")]
+        public PaginationMeta Pagination { get; set; } = null!;
     }
 }

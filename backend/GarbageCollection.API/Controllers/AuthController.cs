@@ -20,11 +20,12 @@ namespace GarbageCollection.API.Controllers
         private readonly IVerifyEmailService _verifyEmailService;
         private readonly ILocalAuthService _localAuthService;
         private readonly ILocalLoginService _localLoginService;
-
-        private readonly IResendOtpService _resendOtpService;   
+        private readonly IPasswordOtpService _passwordOtpService;
+        private readonly IResendOtpService _resendOtpService;
         private readonly IAccountVerificationService _accountVerificationService;
+        private readonly IAdminService _adminService;
 
-        public AuthController(IAuthService authService, IConfiguration configuration, IVerifyEmailService verifyEmailService, ILocalLoginService localLoginService, ILocalAuthService localAuthService, IResendOtpService resendOtpService, IAccountVerificationService accountVerificationService)
+        public AuthController(IAuthService authService, IConfiguration configuration, IVerifyEmailService verifyEmailService, ILocalLoginService localLoginService, IPasswordOtpService passwordOtpService, ILocalAuthService localAuthService, IResendOtpService resendOtpService, IAccountVerificationService accountVerificationService, IAdminService adminService)
 
 
         {
@@ -33,7 +34,8 @@ namespace GarbageCollection.API.Controllers
             _verifyEmailService = verifyEmailService;
             _localLoginService = localLoginService;
             _localAuthService = localAuthService;
-
+            _passwordOtpService = passwordOtpService;
+            _adminService = adminService;
             _resendOtpService = resendOtpService;
             _accountVerificationService = accountVerificationService;
 
@@ -111,7 +113,7 @@ namespace GarbageCollection.API.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddMinutes(15) // match JwtHelper
             });
 
@@ -119,7 +121,7 @@ namespace GarbageCollection.API.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddDays(7)
             });
         }
@@ -349,6 +351,48 @@ namespace GarbageCollection.API.Controllers
                 "you has supplied license",
                 result.Payload!));
         }
+
+        [HttpPost("local-auth/password-otp")]
+        [ProducesResponseType(typeof(ApiResponse<CreatePasswordOtpResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> CreatePasswordOtp(
+           [FromBody] CreatePasswordOtpRequestWrapper request,
+           CancellationToken ct)
+        {
+            // ── Shape guard ───────────────────────────────────────────────────
+            if (request?.Data is null)
+            {
+                return UnprocessableEntity(ApiResponse<object>.Fail(
+                    "wrong email format",
+                    "INVALID_EMAIL_FORMAT",
+                    "Request body must contain a 'data' object with an email field."));
+            }
+
+            // ── Delegate ALL business logic to the service ────────────────────
+            var result = await _passwordOtpService.CreatePasswordOtpAsync(request.Data, ct);
+
+            if (!result.Succeeded)
+            {
+                return StatusCode(
+                    result.HttpStatusCode,
+                    ApiResponse<object>.Fail(result.FailMessage!, result.FailCode!, result.FailDescription!));
+            }
+
+            return Ok(ApiResponse<CreatePasswordOtpResponseDto>.Success(
+                "otp created successfully", result.Payload!));
+        }
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequestDto request,
+        CancellationToken ct)
+        {
+            var (statusCode, response) = await _authService.ResetPasswordAsync(request, ct);
+            return StatusCode(statusCode, response);
+        }
+
+        
     }
 
 }

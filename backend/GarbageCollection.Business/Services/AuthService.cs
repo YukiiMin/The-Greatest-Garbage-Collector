@@ -9,12 +9,14 @@ using GarbageCollection.Common.Enums;
 using GarbageCollection.Common.Models;
 using GarbageCollection.Common.Models.Internal;
 using GarbageCollection.DataAccess.Interfaces;
+using GarbageCollection.DataAccess.Repositories;
 using Google.Apis.Auth;
 using Microsoft.Extensions.Logging;
 
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 
 namespace GarbageCollection.Business.Services
@@ -24,6 +26,7 @@ namespace GarbageCollection.Business.Services
         private readonly IUserRepository _userRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly JwtHelper _jwtHelper;
+        private readonly IPasswordOtpRepository _passwordOtpRepository;
         private readonly ILogger<AuthService> _logger;
 
         private TokenValidationParameters _refreshTokenValidationParams;
@@ -33,11 +36,13 @@ namespace GarbageCollection.Business.Services
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
             JwtHelper jwtHelper,
+            IPasswordOtpRepository passwordOtpRepository,
             ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _jwtHelper = jwtHelper;
+            _passwordOtpRepository = passwordOtpRepository;
             _logger = logger;
         }
 
@@ -309,6 +314,106 @@ namespace GarbageCollection.Business.Services
                 },
                 accessToken: newAccessToken,
                 refreshToken: newRefreshJwt);
+        }
+
+        public async Task<(int, ApiResponse<object>)> ResetPasswordAsync(
+       ResetPasswordRequestDto request,
+       CancellationToken ct = default)
+        {
+            var email = request?.Data?.Email?.Trim();
+            var password = request?.Data?.Password;
+            var otp = request?.Data?.Otp;
+
+            // ── STEP 1: Validate Input ───────────────────────────────
+            if (string.IsNullOrWhiteSpace(email) ||
+                string.IsNullOrWhiteSpace(otp) ||
+                string.IsNullOrWhiteSpace(password) ||
+                !IsValidEmail(email) ||
+                !IsValidPassword(password))
+            {
+                if (request?.Data == null)
+                    return (422, ApiResponse<object>.Fail(
+                    "invalid input",
+                    "INVALID_INPUT",
+                    "Email or password format is incorrect"));
+                if (string.IsNullOrWhiteSpace(otp))
+                {
+                    return (422, ApiResponse<object>.Fail(
+                        "otp is invalid",
+                        "OTP_INVALID",
+                        "OTP is required"));
+                }
+            }
+
+            // ── STEP 2: Check User ───────────────────────────────────
+            var user = await _userRepository.GetByEmailTrackedAsync(email, ct);
+            if (user == null)
+            {
+                return (404, ApiResponse<object>.Fail(
+                    "account not found",
+                    "ACCOUNT_NOT_FOUND",
+                    "No account associated with this email"));
+            }
+
+            // ── STEP 3: Check OTP tồn tại ───────────────────────────
+            var otpEntity = await _passwordOtpRepository.GetByEmailAsync(email, ct);
+
+            if (otpEntity == null)
+            {
+                return (404, ApiResponse<object>.Fail(
+                    "otp not found",
+                    "OTP_NOT_FOUND",
+                    "No OTP record found for this email"));
+            }
+
+            // ── STEP 4: Check expire / used ─────────────────────────
+            if (otpEntity.IsUsed || otpEntity.ExpiresAt < DateTime.UtcNow)
+            {
+                return (422, ApiResponse<object>.Fail(
+                    "otp is invalid",
+                    "OTP_INVALID",
+                    "OTP is expired or already used"));
+            }
+
+            // ── STEP 5: Verify OTP ──────────────────────────────────
+            var isMatch = BCrypt.Net.BCrypt.Verify(otp, otpEntity.OtpCode);
+            if (!isMatch)
+            {
+                return (422, ApiResponse<object>.Fail(
+                    "otp is invalid",
+                    "OTP_INVALID",
+                    "OTP is incorrect"));
+            }
+
+            // ── STEP 8: Save ───────────────────────────────────────
+            // update password
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
+            // mark OTP used
+            await _passwordOtpRepository.MarkUsedAsync(email, ct);
+
+            // save tất cả thay đổi
+            await _userRepository.SaveChangesAsync(ct);
+
+            return (200, ApiResponse<object>.Success(
+                "password has been reset",
+                new { email }));
+        }
+
+        // ── HELPER ────────────────────────────────────────────────
+
+        private bool IsValidEmail(string email)
+        {
+            var regex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            return Regex.IsMatch(email, regex);
+        }
+
+        private bool IsValidPassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password)) return false;
+
+            var regex = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,16}$";
+            return Regex.IsMatch(password, regex);
         }
 
     }
