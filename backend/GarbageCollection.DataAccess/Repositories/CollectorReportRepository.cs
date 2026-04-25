@@ -113,15 +113,6 @@ namespace GarbageCollection.DataAccess.Repositories
                         _context.UserPoints.Update(userPoints);
                     }
 
-                    _context.PointTransactions.Add(new PointTransaction
-                    {
-                        UserId    = report.UserId,
-                        ReportId  = report.Id,
-                        Points    = pointsEarned,
-                        Type      = "EARN",
-                        Reason    = $"Report #{report.Id} collected",
-                        CreatedAt = DateTime.UtcNow
-                    });
                 }
 
                 await _context.SaveChangesAsync();

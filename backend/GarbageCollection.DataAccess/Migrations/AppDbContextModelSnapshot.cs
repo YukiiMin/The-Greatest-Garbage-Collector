@@ -66,6 +66,10 @@ namespace GarbageCollection.DataAccess.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("ActualCapacityKg")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("actual_capacity_kg");
+
                     b.Property<DateTime?>("AssignAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("assign_at");
@@ -397,10 +401,6 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
 
-                    b.Property<bool>("IsDelete")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_delete");
-
                     b.Property<string>("Mechanic")
                         .IsRequired()
                         .HasColumnType("jsonb")
@@ -421,48 +421,6 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.HasIndex("EnterpriseId");
 
                     b.ToTable("point_categories", (string)null);
-                });
-
-            modelBuilder.Entity("GarbageCollection.Common.Models.PointTransaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("integer")
-                        .HasColumnName("points");
-
-                    b.Property<string>("Reason")
-                        .HasColumnType("text")
-                        .HasColumnName("reason");
-
-                    b.Property<Guid>("ReportId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("report_id");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("type");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReportId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("point_transactions", (string)null);
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.RefreshToken", b =>
@@ -793,25 +751,6 @@ namespace GarbageCollection.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Enterprise");
-                });
-
-            modelBuilder.Entity("GarbageCollection.Common.Models.PointTransaction", b =>
-                {
-                    b.HasOne("GarbageCollection.Common.Models.CitizenReport", "Report")
-                        .WithMany()
-                        .HasForeignKey("ReportId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GarbageCollection.Common.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Report");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.RefreshToken", b =>

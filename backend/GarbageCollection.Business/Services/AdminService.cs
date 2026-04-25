@@ -235,7 +235,7 @@ namespace GarbageCollection.Business.Services
                     CollectorImageUrls = complaint.Report.CollectorImageUrls,
                     Status = complaint.Report.Status.ToString().ToUpperInvariant(),
                     CollectedAt = complaint.Report.CollectedAt,
-                    CitizenEmail = complaint.Report?.Citizen?.Email
+                    CitizenEmail = complaint.Report?.User?.Email
                 },
                 AuditTimeline = timeline
             };

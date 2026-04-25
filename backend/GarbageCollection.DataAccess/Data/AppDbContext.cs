@@ -20,7 +20,6 @@ namespace GarbageCollection.DataAccess.Data
         public DbSet<Staff> Staffs { get; set; }
         public DbSet<PointCategory> PointCategories { get; set; }
 
-        public DbSet<PointTransaction> PointTransactions { get; set; }
 
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -81,6 +80,7 @@ namespace GarbageCollection.DataAccess.Data
                 entity.Property(e => e.Description).HasMaxLength(500);
                 entity.Property(e => e.ReportNote).HasMaxLength(500);
                 entity.Property(e => e.Capacity).HasColumnType("decimal(10,2)");
+                entity.Property(e => e.ActualCapacityKg).HasColumnName("actual_capacity_kg").HasColumnType("decimal(10,2)");
                 entity.Property(e => e.Status).HasConversion<string>();
                 entity.Property(e => e.UserId).HasColumnName("citizen_id");
                 entity.Property(e => e.AssignBy).HasColumnName("assign_by");
@@ -160,7 +160,6 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(p => p.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
                 e.Property(p => p.EnterpriseId).HasColumnName("enterprise_id");
                 e.Property(p => p.IsActive).HasColumnName("is_active");
-                e.Property(p => p.IsDelete).HasColumnName("is_delete");
                 e.Property(p => p.CreatedAt).HasColumnName("created_at");
                 e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
 
@@ -364,30 +363,6 @@ namespace GarbageCollection.DataAccess.Data
                  .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ── PointTransaction ──────────────────────────────────────────────
-            modelBuilder.Entity<PointTransaction>(e =>
-            {
-                e.ToTable("point_transactions");
-                e.HasKey(t => t.Id);
-
-                e.Property(t => t.Id).HasColumnName("id");
-                e.Property(t => t.UserId).HasColumnName("user_id");
-                e.Property(t => t.ReportId).HasColumnName("report_id");
-                e.Property(t => t.Points).HasColumnName("points");
-                e.Property(t => t.Type).HasColumnName("type").IsRequired().HasMaxLength(20);
-                e.Property(t => t.Reason).HasColumnName("reason");
-                e.Property(t => t.CreatedAt).HasColumnName("created_at");
-
-                e.HasOne(t => t.User)
-                 .WithMany()
-                 .HasForeignKey(t => t.UserId)
-                 .OnDelete(DeleteBehavior.Cascade);
-
-                e.HasOne(t => t.Report)
-                 .WithMany()
-                 .HasForeignKey(t => t.ReportId)
-                 .OnDelete(DeleteBehavior.Cascade);
-            });
 
             modelBuilder.Entity<PasswordOtp>(e =>
             {

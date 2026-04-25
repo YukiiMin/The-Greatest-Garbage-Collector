@@ -94,7 +94,7 @@ namespace GarbageCollection.DataAccess.Repositories
 
                 // l?y report + citizen c?a report
                 .Include(c => c.Report)
-                    .ThenInclude(r => r.Citizen)
+                    .ThenInclude(r => r.User)
 
                 .FirstOrDefaultAsync(c => c.Id == Guid.Parse(complaintId.ToString()), ct);
         }

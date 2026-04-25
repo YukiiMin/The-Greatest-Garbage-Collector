@@ -12,14 +12,13 @@ namespace GarbageCollection.Common.Models
 
         public decimal? Capacity { get; set; } // kg
 
+        public decimal? ActualCapacityKg { get; set; } // kg thực tế khi thu gom
+
         public string? Description { get; set; }
 
         public ReportStatus Status { get; set; } = ReportStatus.Pending;
 
         public Guid UserId { get; set; }
-
-        public Guid CitizenId { get; set; }
-        public User Citizen { get; set; } = null!;
 
 
         public Guid? PointCategoryId { get; set; }
