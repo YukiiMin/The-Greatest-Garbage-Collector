@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using GarbageCollection.Business.Helpers;
 using GarbageCollection.Common.DTOs;
+using GarbageCollection.Common.DTOs.Admin;
 using GarbageCollection.Common.DTOs.User;
 using GarbageCollection.Common.DTOs.Leaderboard;
 using GarbageCollection.Common.Enums;
@@ -13,20 +14,27 @@ namespace GarbageCollection.API.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private readonly IUserService _userService;
-        private readonly IUserRepository _userRepository;
+        private readonly IUserService        _userService;
+        private readonly IUserRepository     _userRepository;
         private readonly IUploadImageService _uploadImageService;
         private readonly ILeaderboardService _leaderboardService;
+        private readonly IWorkAreaService    _workAreaService;
 
         private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png"];
         private const long MaxAvatarSizeBytes = 5 * 1024 * 1024; // 5 MB
 
-        public UsersController(IUserService userService, IUserRepository userRepository, IUploadImageService uploadImageService, ILeaderboardService leaderboardService)
+        public UsersController(
+            IUserService        userService,
+            IUserRepository     userRepository,
+            IUploadImageService uploadImageService,
+            ILeaderboardService leaderboardService,
+            IWorkAreaService    workAreaService)
         {
             _userService        = userService;
             _userRepository     = userRepository;
             _uploadImageService = uploadImageService;
             _leaderboardService = leaderboardService;
+            _workAreaService    = workAreaService;
         }
 
         /// <summary>
@@ -49,7 +57,7 @@ namespace GarbageCollection.API.Controllers
         /// Cập nhật thông tin profile của user đang đăng nhập.
         /// </summary>
         [Authorize]
-        [HttpPut("/api/v1/users/profile")]
+        [HttpPatch("/api/v1/users/profile")]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -80,6 +88,76 @@ namespace GarbageCollection.API.Controllers
 
             var result = await _userService.UpdateProfileAsync(userId, request, avatarUrl);
             return Ok(ApiResponse<UserProfileDto>.Ok(result, "update user profile successfully"));
+        }
+
+        /// <summary>
+        /// Cập nhật vị trí cư trú (ward + địa chỉ cụ thể). Chỉ dành cho Citizen.
+        /// </summary>
+        [Authorize]
+        [HttpPatch("/api/v1/users/profile/location")]
+        [ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> UpdateLocation([FromBody] UpdateCitizenLocationRequest request)
+        {
+            if (!ModelState.IsValid)
+                return UnprocessableEntity(ApiResponse<object>.Fail("invalid input data", "INVALID_INPUT"));
+
+            var (userId, authErr) = await GetAuthorizedUserAsync();
+            if (authErr is not null) return authErr;
+
+            try
+            {
+                var result = await _userService.UpdateLocationAsync(userId, request);
+                return Ok(ApiResponse<UserProfileDto>.Ok(result, "location updated successfully"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    ApiResponse<object>.Fail(ex.Message, "FORBIDDEN"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<object>.Fail(ex.Message, "NOT_FOUND"));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<object>.Fail(ex.Message, "BAD_REQUEST"));
+            }
+        }
+
+        /// <summary>
+        /// Danh sách districts để citizen chọn khu vực.
+        /// </summary>
+        [Authorize]
+        [HttpGet("/api/v1/users/locations/districts")]
+        [ProducesResponseType(typeof(ApiResponse<List<WorkAreaDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetDistricts()
+        {
+            var districts = await _workAreaService.GetAllAsync("District");
+            return Ok(ApiResponse<List<WorkAreaDto>>.Success("success", districts));
+        }
+
+        /// <summary>
+        /// Danh sách wards thuộc một district.
+        /// </summary>
+        [Authorize]
+        [HttpGet("/api/v1/users/locations/districts/{id}/wards")]
+        [ProducesResponseType(typeof(ApiResponse<List<WorkAreaDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetWards([FromRoute] Guid id)
+        {
+            try
+            {
+                var district = await _workAreaService.GetByIdAsync(id);
+                return Ok(ApiResponse<List<WorkAreaDto>>.Success("success", district.Children));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<object>.Fail(ex.Message, "NOT_FOUND"));
+            }
         }
 
         /// <summary>
@@ -153,8 +231,17 @@ namespace GarbageCollection.API.Controllers
             var (userId, authErr) = await GetAuthorizedUserAsync();
             if (authErr is not null) return authErr;
 
-            var result = await _leaderboardService.GetLeaderboardAsync(userId, period, scope, page, limit, ct);
-            return Ok(ApiResponse<LeaderboardResult>.Ok(result, "get leaderboard successfully"));
+            try
+            {
+                var result = await _leaderboardService.GetLeaderboardAsync(userId, period, scope, page, limit, ct);
+                return Ok(ApiResponse<LeaderboardResult>.Ok(result, "get leaderboard successfully"));
+            }
+            catch (InvalidOperationException ex) when (ex.Message == "WORK_AREA_NOT_SET")
+            {
+                return UnprocessableEntity(ApiResponse<object>.Fail(
+                    "work area not set", "WORK_AREA_NOT_SET",
+                    "Ban chua chon phuong cu tru. Vui long cap nhat profile truoc khi xem leaderboard theo khu vuc."));
+            }
         }
 
         private async Task<(Guid Id, IActionResult? Error)> GetAuthorizedUserAsync()

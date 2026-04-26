@@ -110,6 +110,28 @@ namespace GarbageCollection.Business.Helpers
             return Convert.ToHexString(bytes).ToLowerInvariant();
         }
 
+        // ── Validation parameters for refresh tokens ──────────────────────────
+
+        /// <summary>
+        /// Returns TokenValidationParameters for refresh token JWTs.
+        /// ValidateLifetime = false so structurally valid but expired tokens
+        /// can still be parsed — expiry is enforced via the DB ExpiresAt field.
+        /// </summary>
+        public TokenValidationParameters GetRefreshTokenValidationParams() => new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = _issuer,
+
+            ValidateAudience = true,
+            ValidAudience = _audience,
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey)),
+
+            ValidateLifetime = false,
+            ClockSkew = TimeSpan.Zero
+        };
+
         // ── Expiry accessors ──────────────────────────────────────────────────
 
         public int AccessTokenExpiryMinutes => _accessTokenExpiryMinutes;

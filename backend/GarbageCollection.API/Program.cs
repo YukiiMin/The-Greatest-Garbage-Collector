@@ -1,5 +1,7 @@
 using System.Text;
 using System.Reflection;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CloudinaryDotNet;
@@ -147,7 +149,8 @@ builder.Services.AddScoped<IEmailOtpRepository,      EmailOtpRepository>();
 builder.Services.AddScoped<IPasswordOtpRepository, PasswordOtpRepository>();
 builder.Services.AddScoped<IUserPointsRepository,    UserPointsRepository>();
 builder.Services.AddScoped<ICollectorReportRepository, CollectorReportRepository>();
-
+builder.Services.AddScoped<ITeamSessionRepository,     TeamSessionRepository>();
+builder.Services.AddScoped<IWorkAreaRepository,        WorkAreaRepository>();
 
 // Services
 builder.Services.AddScoped<IUploadImageService,  UploadImageService>();
@@ -161,11 +164,16 @@ builder.Services.AddScoped<IVerifyEmailService, VerifyEmailService>();
 builder.Services.AddScoped<IEmailService,       SmtpEmailService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ICollectorReportService, CollectorReportService>();
-builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IAdminService,      AdminService>();
+builder.Services.AddScoped<IEnterpriseService, EnterpriseService>();
+builder.Services.AddScoped<IWorkAreaService,   WorkAreaService>();
 
 builder.Services.AddScoped<IResendOtpService, ResendOtpService>();
 builder.Services.AddScoped<IPasswordOtpService, PasswordOtpService>();
 builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
+
+// Background services
+builder.Services.AddHostedService<GarbageCollection.API.Helpers.PointsResetBackgroundService>();
 
 
 // ── 7. Controllers + JSON ──────────────────────────────────────────────────────
@@ -175,6 +183,9 @@ builder.Services.AddControllers()
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
     });
+
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
 {
@@ -224,7 +235,6 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
-
 
 // ── 10. Global Exception Handler ───────────────────────────────────────────────
 

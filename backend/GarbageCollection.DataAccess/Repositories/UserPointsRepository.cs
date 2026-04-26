@@ -85,5 +85,33 @@ namespace GarbageCollection.DataAccess.Repositories
 
             return higherCount + 1;
         }
+
+        public async Task UpdateWorkAreaNameAsync(Guid userId, string workAreaName, CancellationToken ct = default)
+        {
+            var points = await _context.UserPoints.FirstOrDefaultAsync(p => p.UserId == userId, ct);
+            if (points is not null)
+            {
+                points.WorkAreaName = workAreaName;
+                await _context.SaveChangesAsync(ct);
+            }
+        }
+
+        public async Task ResetWeekPointsAsync(CancellationToken ct = default)
+        {
+            await _context.UserPoints
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.WeekPoints, 0), ct);
+        }
+
+        public async Task ResetMonthPointsAsync(CancellationToken ct = default)
+        {
+            await _context.UserPoints
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.MonthPoints, 0), ct);
+        }
+
+        public async Task ResetYearPointsAsync(CancellationToken ct = default)
+        {
+            await _context.UserPoints
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.YearPoints, 0), ct);
+        }
     }
 }

@@ -44,6 +44,7 @@ namespace GarbageCollection.Business.Services
             _jwtHelper = jwtHelper;
             _passwordOtpRepository = passwordOtpRepository;
             _logger = logger;
+            _refreshTokenValidationParams = jwtHelper.GetRefreshTokenValidationParams();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -347,7 +348,7 @@ namespace GarbageCollection.Business.Services
             }
 
             // ── STEP 2: Check User ───────────────────────────────────
-            var user = await _userRepository.GetByEmailTrackedAsync(email, ct);
+            var user = await _userRepository.GetByEmailTrackedAsync(email!, ct);
             if (user == null)
             {
                 return (404, ApiResponse<object>.Fail(
@@ -357,7 +358,7 @@ namespace GarbageCollection.Business.Services
             }
 
             // ── STEP 3: Check OTP tồn tại ───────────────────────────
-            var otpEntity = await _passwordOtpRepository.GetByEmailAsync(email, ct);
+            var otpEntity = await _passwordOtpRepository.GetByEmailAsync(email!, ct);
 
             if (otpEntity == null)
             {
@@ -391,7 +392,7 @@ namespace GarbageCollection.Business.Services
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
             // mark OTP used
-            await _passwordOtpRepository.MarkUsedAsync(email, ct);
+            await _passwordOtpRepository.MarkUsedAsync(email!, ct);
 
             // save tất cả thay đổi
             await _userRepository.SaveChangesAsync(ct);

@@ -1,3 +1,4 @@
+using GarbageCollection.Common.Enums;
 using GarbageCollection.Common.Models;
 using GarbageCollection.DataAccess.Data;
 using GarbageCollection.DataAccess.Interfaces;
@@ -29,7 +30,6 @@ namespace GarbageCollection.DataAccess.Repositories
         public Task<User?> GetByGoogleIdAsync(string googleId, CancellationToken ct = default)
             => _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.GoogleId == googleId, ct);
 
-
         public async Task IncrementLoginTermAsync(Guid userId, CancellationToken ct = default)
         {
             await _db.Users
@@ -47,5 +47,46 @@ namespace GarbageCollection.DataAccess.Repositories
 
         public Task SaveChangesAsync(CancellationToken ct = default)
             => _db.SaveChangesAsync(ct);
+
+        public async Task<(IReadOnlyList<User> Items, int Total)> GetPagedAsync(
+            string? search,
+            UserRole? role,
+            bool? isBanned,
+            int page,
+            int limit,
+            CancellationToken ct = default)
+        {
+            var query = _db.Users.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(u =>
+                    u.Email.ToLower().Contains(term) ||
+                    u.FullName.ToLower().Contains(term));
+            }
+
+            if (role.HasValue)
+                query = query.Where(u => u.Role == role.Value);
+
+            if (isBanned.HasValue)
+                query = query.Where(u => u.IsBanned == isBanned.Value);
+
+            var total = await query.CountAsync(ct);
+            var items = await query
+                .OrderBy(u => u.CreatedAt)
+                .Skip((page - 1) * limit)
+                .Take(limit)
+                .ToListAsync(ct);
+
+            return (items, total);
+        }
+
+        public async Task<User> UpdateAsync(User user, CancellationToken ct = default)
+        {
+            _db.Users.Update(user);
+            await _db.SaveChangesAsync(ct);
+            return user;
+        }
     }
 }

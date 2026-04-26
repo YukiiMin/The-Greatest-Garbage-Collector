@@ -7,6 +7,7 @@ namespace GarbageCollection.Common.DTOs.CitizenReport
         public List<string> Types { get; set; } = [];
         public decimal? Capacity { get; set; }
         public string? Description { get; set; }
+        public string? Address { get; set; }
         public string Status { get; set; } = string.Empty;
         public Guid UserId { get; set; }
         public Guid? PointCategoryId { get; set; }
@@ -23,5 +24,9 @@ namespace GarbageCollection.Common.DTOs.CitizenReport
         public DateTime? CompleteAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        // Thông tin vị trí của người tạo báo cáo
+        public Guid? CitizenWorkAreaId { get; set; }
+        public string? CitizenAddress { get; set; }
     }
 }

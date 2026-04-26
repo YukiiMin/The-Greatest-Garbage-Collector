@@ -16,6 +16,8 @@ namespace GarbageCollection.Common.Models
 
         public string? Description { get; set; }
 
+        public string? Address { get; set; }
+
         public ReportStatus Status { get; set; } = ReportStatus.Pending;
 
         public Guid UserId { get; set; }

@@ -23,9 +23,13 @@ namespace GarbageCollection.Business.Services
             int limit,
             CancellationToken ct = default)
         {
-            // Lấy work area của user hiện tại (dùng cho scope=area)
+            // Lấy work area của user hiện tại (dùng cho scope=Area)
             var myPoints = await _userPointsRepository.GetByUserIdAsync(userId, ct);
             var myWorkArea = myPoints?.WorkAreaName;
+
+            // scope=Area yêu cầu user đã chọn phường cư trú
+            if (scope == LeaderboardScope.Area && string.IsNullOrEmpty(myWorkArea))
+                throw new InvalidOperationException("WORK_AREA_NOT_SET");
 
             // Lấy rank và điểm của user hiện tại
             var myRank = await _userPointsRepository.GetUserRankAsync(userId, period, scope, myWorkArea, ct);

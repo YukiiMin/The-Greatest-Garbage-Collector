@@ -10,7 +10,6 @@ namespace GarbageCollection.Common.Enums
         Completed  = 6,
         Rejected   = 7,
         Failed     = 8,
-        Cancel     = 9,
-        OnTheWay   = 10
+        Cancel     = 9
     }
 }

@@ -70,6 +70,11 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("actual_capacity_kg");
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("address");
+
                     b.Property<DateTime?>("AssignAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("assign_at");
@@ -207,10 +212,9 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("WorkArea")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("work_area");
+                    b.Property<Guid?>("WorkAreaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_area_id");
 
                     b.HasKey("Id");
 
@@ -219,7 +223,9 @@ namespace GarbageCollection.DataAccess.Migrations
 
                     b.HasIndex("EnterpriseId");
 
-                    b.ToTable("collectors", (string)null);
+                    b.HasIndex("WorkAreaId");
+
+                    b.ToTable("collector_hub", (string)null);
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Complaint", b =>
@@ -369,17 +375,18 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("WorkArea")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("work_area");
+                    b.Property<Guid?>("WorkAreaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_area_id");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("enterprises", (string)null);
+                    b.HasIndex("WorkAreaId");
+
+                    b.ToTable("enterprise_hub", (string)null);
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.PointCategory", b =>
@@ -474,15 +481,25 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
+                    b.Property<Guid?>("CollectorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("collector_id");
+
                     b.Property<Guid>("EnterpriseId")
                         .HasColumnType("uuid")
                         .HasColumnName("enterprise_id");
 
-                    b.Property<Guid>("TeamId")
+                    b.Property<DateTime?>("JoinTeamAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("join_team_at");
+
+                    b.Property<Guid?>("TeamId")
                         .HasColumnType("uuid")
                         .HasColumnName("team_id");
 
                     b.HasKey("UserId");
+
+                    b.HasIndex("CollectorId");
 
                     b.HasIndex("EnterpriseId");
 
@@ -507,8 +524,8 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnName("created_at");
 
                     b.Property<string>("DispatchTime")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("dispatch_time");
 
                     b.Property<bool>("InWork")
@@ -553,7 +570,51 @@ namespace GarbageCollection.DataAccess.Migrations
 
                     b.HasIndex("CollectorId");
 
+                    b.HasIndex("WorkAreaId");
+
                     b.ToTable("teams", (string)null);
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.TeamSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<DateTime?>("EndAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("end_at");
+
+                    b.Property<DateTime>("StartAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_at");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("team_id");
+
+                    b.Property<decimal>("TotalCapacity")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("total_capacity");
+
+                    b.Property<int>("TotalReports")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_reports");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeamId");
+
+                    b.ToTable("team_sessions", (string)null);
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.User", b =>
@@ -567,10 +628,6 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
                         .HasColumnName("address");
-
-                    b.Property<string>("Area")
-                        .HasColumnType("text")
-                        .HasColumnName("area");
 
                     b.Property<string>("AvatarUrl")
                         .HasMaxLength(1024)
@@ -634,9 +691,9 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("WorkArea")
-                        .HasColumnType("text")
-                        .HasColumnName("work_area");
+                    b.Property<Guid?>("WorkAreaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_area_id");
 
                     b.HasKey("Id");
 
@@ -644,6 +701,8 @@ namespace GarbageCollection.DataAccess.Migrations
                         .IsUnique();
 
                     b.HasIndex("GoogleId");
+
+                    b.HasIndex("WorkAreaId");
 
                     b.ToTable("users", (string)null);
                 });
@@ -688,6 +747,40 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.ToTable("user_points", (string)null);
                 });
 
+            modelBuilder.Entity("GarbageCollection.Common.Models.WorkArea", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("work_areas", (string)null);
+                });
+
             modelBuilder.Entity("GarbageCollection.Common.DTOs.PasswordOtp", b =>
                 {
                     b.HasOne("GarbageCollection.Common.Models.User", "User")
@@ -718,9 +811,16 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasForeignKey("EnterpriseId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_collectors_enterprise_id");
+                        .HasConstraintName("fk_collector_hub_enterprise_id");
+
+                    b.HasOne("GarbageCollection.Common.Models.WorkArea", "WorkArea")
+                        .WithMany()
+                        .HasForeignKey("WorkAreaId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Enterprise");
+
+                    b.Navigation("WorkArea");
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Complaint", b =>
@@ -740,6 +840,16 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.Navigation("Citizen");
 
                     b.Navigation("Report");
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.Enterprise", b =>
+                {
+                    b.HasOne("GarbageCollection.Common.Models.WorkArea", "WorkArea")
+                        .WithMany()
+                        .HasForeignKey("WorkAreaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("WorkArea");
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.PointCategory", b =>
@@ -766,6 +876,11 @@ namespace GarbageCollection.DataAccess.Migrations
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Staff", b =>
                 {
+                    b.HasOne("GarbageCollection.Common.Models.Collector", "Collector")
+                        .WithMany()
+                        .HasForeignKey("CollectorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("GarbageCollection.Common.Models.Enterprise", "Enterprise")
                         .WithMany()
                         .HasForeignKey("EnterpriseId")
@@ -775,14 +890,15 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.HasOne("GarbageCollection.Common.Models.Team", "Team")
                         .WithMany()
                         .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GarbageCollection.Common.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Collector");
 
                     b.Navigation("Enterprise");
 
@@ -799,7 +915,35 @@ namespace GarbageCollection.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("GarbageCollection.Common.Models.WorkArea", "WorkArea")
+                        .WithMany()
+                        .HasForeignKey("WorkAreaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Collector");
+
+                    b.Navigation("WorkArea");
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.TeamSession", b =>
+                {
+                    b.HasOne("GarbageCollection.Common.Models.Team", "Team")
+                        .WithMany()
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.User", b =>
+                {
+                    b.HasOne("GarbageCollection.Common.Models.WorkArea", "WorkArea")
+                        .WithMany()
+                        .HasForeignKey("WorkAreaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("WorkArea");
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.UserPoints", b =>
@@ -813,11 +957,26 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("GarbageCollection.Common.Models.WorkArea", b =>
+                {
+                    b.HasOne("GarbageCollection.Common.Models.WorkArea", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Parent");
+                });
+
             modelBuilder.Entity("GarbageCollection.Common.Models.User", b =>
                 {
                     b.Navigation("PasswordOtp");
 
                     b.Navigation("RefreshTokens");
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.WorkArea", b =>
+                {
+                    b.Navigation("Children");
                 });
 #pragma warning restore 612, 618
         }

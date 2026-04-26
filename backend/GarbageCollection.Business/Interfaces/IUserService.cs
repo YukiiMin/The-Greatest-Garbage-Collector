@@ -6,6 +6,7 @@ namespace GarbageCollection.Business.Interfaces
     {
         Task<UserProfileDto> GetProfileAsync(Guid userId);
         Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest data, string? avatarUrl = null);
+        Task<UserProfileDto> UpdateLocationAsync(Guid userId, UpdateCitizenLocationRequest req);
 
         /// <summary>
         /// Đổi mật khẩu. Trả về accessToken mới để controller set cookie.

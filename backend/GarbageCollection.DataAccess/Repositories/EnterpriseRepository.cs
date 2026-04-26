@@ -15,10 +15,19 @@ namespace GarbageCollection.DataAccess.Repositories
         }
 
         public Task<Enterprise?> GetByIdAsync(Guid id)
-            => _context.Enterprises.FirstOrDefaultAsync(e => e.Id == id);
+            => _context.Enterprises
+                .Include(e => e.WorkArea)
+                .FirstOrDefaultAsync(e => e.Id == id);
+
+        public Task<Enterprise?> GetByEmailAsync(string email)
+            => _context.Enterprises
+                .Include(e => e.WorkArea)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Email.ToLower() == email.ToLower());
 
         public Task<IEnumerable<Enterprise>> GetAllAsync()
             => _context.Enterprises
+                .Include(e => e.WorkArea)
                 .OrderBy(e => e.Name)
                 .ToListAsync()
                 .ContinueWith(r => (IEnumerable<Enterprise>)r.Result);

@@ -12,10 +12,13 @@ namespace GarbageCollection.Common.Models
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
 
-        /// <summary>Khu vực hoạt động của trung tâm tái chế (mô tả hoặc GeoJSON polygon).</summary>
-        public string WorkArea { get; set; } = string.Empty;
+        /// <summary>ID của WorkArea cấp District mà enterprise phụ trách.</summary>
+        public Guid? WorkAreaId { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation
+        public WorkArea? WorkArea { get; set; }
     }
 }

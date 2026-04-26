@@ -1,0 +1,5 @@
+Email				Password	Role
+admin@ecoconnect.vn		Test@1234	Admin
+enterprise1@ecoconnect.vn	Test@1234	Enterprise
+collector1@ecoconnect.vn	Test@1234	Collector
+citizen1@ecoconnect.vn		Test@1234	Citizen

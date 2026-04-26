@@ -1,14 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace GarbageCollection.Common.DTOs.User
 {
     public class UpdateUserProfileRequest
     {
-        [Required(ErrorMessage = "fullname is required")]
         [MaxLength(256, ErrorMessage = "fullname must not exceed 256 characters")]
-        public string Fullname { get; set; } = string.Empty;
-
-        [MaxLength(512, ErrorMessage = "address must not exceed 512 characters")]
-        public string? Address { get; set; }
+        [JsonPropertyName("fullname")]
+        public string? Fullname { get; set; }
     }
 }

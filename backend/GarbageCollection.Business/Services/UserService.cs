@@ -8,13 +8,21 @@ namespace GarbageCollection.Business.Services
 {
     public class UserService : IUserService
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IUserRepository         _userRepository;
+        private readonly IWorkAreaRepository     _workAreaRepository;
+        private readonly IUserPointsRepository   _userPointsRepository;
         private readonly JwtHelper _jwtHelper;
 
-        public UserService(IUserRepository userRepository, JwtHelper jwtHelper)
+        public UserService(
+            IUserRepository userRepository,
+            IWorkAreaRepository workAreaRepository,
+            IUserPointsRepository userPointsRepository,
+            JwtHelper jwtHelper)
         {
-            _userRepository = userRepository;
-            _jwtHelper      = jwtHelper;
+            _userRepository       = userRepository;
+            _workAreaRepository   = workAreaRepository;
+            _userPointsRepository = userPointsRepository;
+            _jwtHelper            = jwtHelper;
         }
 
         public async Task<UserProfileDto> GetProfileAsync(Guid userId)
@@ -30,10 +38,38 @@ namespace GarbageCollection.Business.Services
             var user = await _userRepository.GetByIdTrackedAsync(userId)
                 ?? throw new KeyNotFoundException("account not found");
 
-            user.FullName  = data.Fullname;
-            user.Address   = data.Address;
+            if (data.Fullname != null)
+                user.FullName = data.Fullname;
             if (avatarUrl != null)
                 user.AvatarUrl = avatarUrl;
+
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _userRepository.SaveChangesAsync();
+            return MapToDto(user);
+        }
+
+        public async Task<UserProfileDto> UpdateLocationAsync(Guid userId, UpdateCitizenLocationRequest req)
+        {
+            var user = await _userRepository.GetByIdTrackedAsync(userId)
+                ?? throw new KeyNotFoundException("account not found");
+
+            if (user.Role != Common.Enums.UserRole.Citizen)
+                throw new UnauthorizedAccessException("only citizens can update location");
+
+            var workArea = await _workAreaRepository.GetByIdAsync(req.WardId)
+                ?? throw new KeyNotFoundException("ward not found");
+
+            if (workArea.Type != "Ward")
+                throw new ArgumentException("ward_id must be a Ward-level work area");
+
+            user.WorkAreaId = req.WardId;
+            if (req.Address != null)
+                user.Address = req.Address;
+
+            // Sync denormalized cache in user_points for leaderboard scope=Area
+            await _userPointsRepository.UpdateWorkAreaNameAsync(userId, workArea.Name);
+
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.SaveChangesAsync();
@@ -73,12 +109,14 @@ namespace GarbageCollection.Business.Services
 
         private static UserProfileDto MapToDto(User u) => new()
         {
-            Email     = u.Email,
-            Fullname  = u.FullName,
-            Address   = u.Address,
-            AvatarUrl = u.AvatarUrl,
-            CreatedAt = u.CreatedAt,
-            UpdatedAt = u.UpdatedAt
+            Email      = u.Email,
+            Fullname   = u.FullName,
+            Role       = u.Role.ToString(),
+            Address    = u.Address,
+            AvatarUrl  = u.AvatarUrl,
+            WorkAreaId = u.WorkAreaId,
+            CreatedAt  = u.CreatedAt,
+            UpdatedAt  = u.UpdatedAt
         };
     }
 }

@@ -12,13 +12,16 @@ namespace GarbageCollection.Business.Services
     {
         private readonly ICitizenReportRepository _reportRepository;
         private readonly IUploadImageService _uploadImageService;
+        private readonly IUserRepository _userRepository;
 
         public CitizenReportService(
             ICitizenReportRepository reportRepository,
-            IUploadImageService uploadImageService)
+            IUploadImageService uploadImageService,
+            IUserRepository userRepository)
         {
-            _reportRepository = reportRepository;
+            _reportRepository   = reportRepository;
             _uploadImageService = uploadImageService;
+            _userRepository     = userRepository;
         }
 
         public async Task<CitizenReportResponseDto> CreateReportAsync(Guid userId, CreateCitizenReportDto dto)
@@ -26,11 +29,21 @@ namespace GarbageCollection.Business.Services
             if (dto.Types.Count > 4)
                 throw new ArgumentException("Tối đa 4 loại rác mỗi báo cáo.");
 
+            var user = await _userRepository.GetByIdAsync(userId)
+                ?? throw new KeyNotFoundException("account not found");
+
+            if (user.WorkAreaId is null)
+                throw new InvalidOperationException("WORK_AREA_NOT_SET");
+
+            if (string.IsNullOrWhiteSpace(user.Address))
+                throw new InvalidOperationException("ADDRESS_NOT_SET");
+
             var imageUrls = await _uploadImageService.UploadImagesAsync(dto.Images, "citizen-reports");
 
             var report = new CitizenReport
             {
                 UserId           = userId,
+                Address          = user?.Address,
                 CitizenImageUrls = imageUrls,
                 Description      = dto.Description,
                 Types            = dto.Types.ToList(),
@@ -133,7 +146,7 @@ namespace GarbageCollection.Business.Services
 
             if (newStatus == ReportStatus.Assigned)
                 report.AssignAt = DateTime.UtcNow;
-            else if (newStatus == ReportStatus.OnTheWay)
+            else if (newStatus == ReportStatus.Processing)
                 report.StartCollectingAt = DateTime.UtcNow;
             else if (newStatus == ReportStatus.Collected)
                 report.CollectedAt = DateTime.UtcNow;
@@ -150,8 +163,8 @@ namespace GarbageCollection.Business.Services
             {
                 { ReportStatus.Pending,    [ReportStatus.Queue,      ReportStatus.Rejected, ReportStatus.Cancel] },
                 { ReportStatus.Queue,      [ReportStatus.Assigned,   ReportStatus.Rejected, ReportStatus.Cancel] },
-                { ReportStatus.Assigned,   [ReportStatus.OnTheWay,  ReportStatus.Failed,   ReportStatus.Cancel] },
-                { ReportStatus.OnTheWay,   [ReportStatus.Collected, ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.Assigned,   [ReportStatus.Processing,  ReportStatus.Failed,   ReportStatus.Cancel] },
+                { ReportStatus.Processing,   [ReportStatus.Collected, ReportStatus.Failed,   ReportStatus.Cancel] },
                 { ReportStatus.Collected,  [ReportStatus.Completed]                                              },
             };
 
@@ -172,6 +185,7 @@ namespace GarbageCollection.Business.Services
             Types              = report.Types.Select(t => t.ToString()).ToList(),
             Capacity           = report.Capacity,
             Description        = report.Description,
+            Address            = report.Address,
             Status             = report.Status.ToString(),
             UserId             = report.UserId,
             PointCategoryId    = report.PointCategoryId,
@@ -188,6 +202,8 @@ namespace GarbageCollection.Business.Services
             CompleteAt         = report.CompleteAt,
             CreatedAt          = report.CreatedAt,
             UpdatedAt          = report.UpdatedAt,
+            CitizenWorkAreaId  = report.User?.WorkAreaId,
+            CitizenAddress     = report.User?.Address,
         };
     }
 }

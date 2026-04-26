@@ -36,6 +36,13 @@ namespace GarbageCollection.DataAccess.Repositories
                 .ToListAsync()
                 .ContinueWith(r => (IEnumerable<Staff>)r.Result);
 
+        public Task<IEnumerable<Staff>> GetByCollectorIdAsync(Guid collectorId)
+            => _context.Staffs
+                .Include(s => s.User)
+                .Where(s => s.CollectorId == collectorId)
+                .ToListAsync()
+                .ContinueWith(r => (IEnumerable<Staff>)r.Result);
+
         public async Task<Staff> CreateAsync(Staff staff)
         {
             _context.Staffs.Add(staff);

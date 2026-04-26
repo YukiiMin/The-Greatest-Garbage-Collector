@@ -18,5 +18,6 @@ namespace GarbageCollection.Common.Models
 
         // Navigation
         public Collector Collector { get; set; } = null!;
+        public WorkArea? WorkArea { get; set; }
     }
 }

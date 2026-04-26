@@ -12,8 +12,8 @@ namespace GarbageCollection.Common.Models
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
 
-        /// <summary>Khu vực hoạt động đi thu gom rác (mô tả hoặc GeoJSON polygon).</summary>
-        public string WorkArea { get; set; } = string.Empty;
+        /// <summary>ID của WorkArea cấp Ward mà collector phụ trách.</summary>
+        public Guid? WorkAreaId { get; set; }
 
         public int? AssignedCapacity { get; set; }
         public Guid EnterpriseId { get; set; }
@@ -22,5 +22,6 @@ namespace GarbageCollection.Common.Models
 
         // Navigation
         public Enterprise Enterprise { get; set; } = null!;
+        public WorkArea? WorkArea { get; set; }
     }
 }

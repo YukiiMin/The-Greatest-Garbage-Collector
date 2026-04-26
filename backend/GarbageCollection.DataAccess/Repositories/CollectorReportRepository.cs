@@ -20,8 +20,8 @@ namespace GarbageCollection.DataAccess.Repositories
         {
             var activeStatuses = new[]
             {
-                ReportStatus.OnTheWay,
-                ReportStatus.Collected
+                ReportStatus.Assigned,
+                ReportStatus.Processing
             };
 
             return _context.CitizenReports
@@ -44,7 +44,7 @@ namespace GarbageCollection.DataAccess.Repositories
                     r.AssignAt >= start && r.AssignAt < end);
         }
 
-        public Task<bool> HasOnTheWayTodayAsync(Guid teamId, DateOnly date)
+        public Task<bool> HasProcessingTodayAsync(Guid teamId, DateOnly date)
         {
             var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             var end   = start.AddDays(1);
@@ -52,7 +52,7 @@ namespace GarbageCollection.DataAccess.Repositories
             return _context.CitizenReports
                 .AnyAsync(r =>
                     r.TeamId == teamId &&
-                    r.Status == ReportStatus.OnTheWay &&
+                    r.Status == ReportStatus.Processing &&
                     r.AssignAt >= start && r.AssignAt < end);
         }
 
@@ -63,9 +63,9 @@ namespace GarbageCollection.DataAccess.Repositories
 
             return await _context.Database.ExecuteSqlRawAsync(
                 @"UPDATE citizen_reports
-                  SET status = 'OnTheWay', updated_at = NOW()
+                  SET ""Status"" = 'Processing', ""UpdatedAt"" = NOW()
                   WHERE team_id = @teamId
-                    AND status = 'Assigned'
+                    AND ""Status"" = 'Assigned'
                     AND assign_at >= @start
                     AND assign_at < @end",
                 new NpgsqlParameter("@teamId", teamId),
@@ -76,7 +76,8 @@ namespace GarbageCollection.DataAccess.Repositories
         public async Task<CitizenReport> CollectWithPointsAsync(
             CitizenReport report,
             List<string> imageUrls,
-            int pointsEarned)
+            int pointsEarned,
+            decimal? actualCapacityKg)
         {
             await using var tx = await _context.Database.BeginTransactionAsync();
             try
@@ -86,6 +87,7 @@ namespace GarbageCollection.DataAccess.Repositories
                 report.CollectedAt        = DateTime.UtcNow;
                 report.UpdatedAt          = DateTime.UtcNow;
                 report.Point              = pointsEarned;
+                report.ActualCapacityKg   = actualCapacityKg;
                 _context.CitizenReports.Update(report);
 
                 if (pointsEarned > 0)
@@ -112,7 +114,6 @@ namespace GarbageCollection.DataAccess.Repositories
                         userPoints.UpdatedAt    = DateTime.UtcNow;
                         _context.UserPoints.Update(userPoints);
                     }
-
                 }
 
                 await _context.SaveChangesAsync();
@@ -125,5 +126,39 @@ namespace GarbageCollection.DataAccess.Repositories
                 throw;
             }
         }
+
+        public async Task MarkFailedAsync(CitizenReport report, string reason)
+        {
+            report.Status     = ReportStatus.Failed;
+            report.ReportNote = reason;
+            report.UpdatedAt  = DateTime.UtcNow;
+            _context.CitizenReports.Update(report);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<(int TotalReports, decimal TotalCapacity)> GetSessionSummaryAsync(Guid teamId, DateOnly date)
+        {
+            var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var end   = start.AddDays(1);
+
+            var reports = await _context.CitizenReports
+                .AsNoTracking()
+                .Where(r =>
+                    r.TeamId == teamId &&
+                    r.Status == ReportStatus.Collected &&
+                    r.AssignAt >= start && r.AssignAt < end)
+                .ToListAsync();
+
+            var total    = reports.Count;
+            var capacity = reports.Sum(r => r.ActualCapacityKg ?? 0m);
+
+            return (total, capacity);
+        }
+
+        public async Task<IReadOnlyList<CitizenReport>> GetByTeamSinceAsync(Guid teamId, DateTime since)
+            => await _context.CitizenReports
+                .AsNoTracking()
+                .Where(r => r.TeamId == teamId && r.ReportAt >= since)
+                .ToListAsync();
     }
 }

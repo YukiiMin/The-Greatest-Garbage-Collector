@@ -17,10 +17,12 @@ namespace GarbageCollection.DataAccess.Repositories
         public Task<Collector?> GetByIdAsync(Guid id)
             => _context.Collectors
                 .Include(c => c.Enterprise)
+                .Include(c => c.WorkArea)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
         public Task<IEnumerable<Collector>> GetByEnterpriseIdAsync(Guid enterpriseId)
             => _context.Collectors
+                .Include(c => c.WorkArea)
                 .Where(c => c.EnterpriseId == enterpriseId)
                 .OrderBy(c => c.Name)
                 .ToListAsync()

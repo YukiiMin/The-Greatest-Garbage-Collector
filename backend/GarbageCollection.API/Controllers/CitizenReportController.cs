@@ -61,9 +61,24 @@ namespace GarbageCollection.API.Controllers
             var (userId, authErr) = await GetAuthorizedUserAsync();
             if (authErr is not null) return authErr;
 
-            var result = await _reportService.CreateReportAsync(userId, dto);
-            return StatusCode(StatusCodes.Status201Created,
-                ApiResponse<CitizenReportResponseDto>.Ok(result, "report created successfully"));
+            try
+            {
+                var result = await _reportService.CreateReportAsync(userId, dto);
+                return StatusCode(StatusCodes.Status201Created,
+                    ApiResponse<CitizenReportResponseDto>.Ok(result, "report created successfully"));
+            }
+            catch (InvalidOperationException ex) when (ex.Message == "WORK_AREA_NOT_SET")
+            {
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    ApiResponse<object>.Fail("work area not set", "WORK_AREA_NOT_SET",
+                        "Bạn cần chọn phường cư trú trước khi tạo báo cáo."));
+            }
+            catch (InvalidOperationException ex) when (ex.Message == "ADDRESS_NOT_SET")
+            {
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    ApiResponse<object>.Fail("address not set", "ADDRESS_NOT_SET",
+                        "Bạn cần nhập địa chỉ cụ thể trước khi tạo báo cáo."));
+            }
         }
 
         /// <summary>
@@ -107,7 +122,7 @@ namespace GarbageCollection.API.Controllers
         /// Citizen cập nhật báo cáo — chỉ được khi status là Pending và chưa từng update.
         /// </summary>
         [Authorize]
-        [HttpPut("/api/v1/users/citizen-reports/{id:guid}")]
+        [HttpPatch("/api/v1/users/citizen-reports/{id:guid}")]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<CitizenReportResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -148,7 +163,7 @@ namespace GarbageCollection.API.Controllers
         /// Citizen hủy báo cáo — chỉ được khi status là Pending và trong 10 phút.
         /// </summary>
         [Authorize]
-        [HttpDelete("/api/v1/users/citizen-reports/{id:guid}")]
+        [HttpPatch("/api/v1/users/citizen-reports/{id:guid}/cancel")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]

@@ -1,4 +1,5 @@
-﻿using GarbageCollection.Common.Models;
+using GarbageCollection.Common.Enums;
+using GarbageCollection.Common.Models;
 
 namespace GarbageCollection.DataAccess.Interfaces
 {
@@ -11,7 +12,16 @@ namespace GarbageCollection.DataAccess.Interfaces
         Task<User?> GetByGoogleIdAsync(string googleId, CancellationToken ct = default);
         Task<User> CreateAsync(User user, CancellationToken ct = default);
         Task IncrementLoginTermAsync(Guid userId, CancellationToken ct = default);
-
         Task SaveChangesAsync(CancellationToken ct = default);
+
+        Task<(IReadOnlyList<User> Items, int Total)> GetPagedAsync(
+            string? search,
+            UserRole? role,
+            bool? isBanned,
+            int page,
+            int limit,
+            CancellationToken ct = default);
+
+        Task<User> UpdateAsync(User user, CancellationToken ct = default);
     }
 }

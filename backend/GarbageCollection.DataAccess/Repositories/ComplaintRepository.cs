@@ -55,7 +55,7 @@ namespace GarbageCollection.DataAccess.Repositories
         {
             var json = JsonSerializer.Serialize(new[] { message });
             await _context.Database.ExecuteSqlRawAsync(
-                "UPDATE complaints SET messages = COALESCE(messages, '[]'::jsonb) || @msg::jsonb WHERE id = @id",
+                @"UPDATE complaints SET messages = COALESCE(messages, '[]'::jsonb) || CAST(@msg AS jsonb) WHERE ""Id"" = @id",
                 new NpgsqlParameter("@msg", json),
                 new NpgsqlParameter("@id", complaintId));
         }

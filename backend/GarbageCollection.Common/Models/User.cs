@@ -19,15 +19,14 @@ namespace GarbageCollection.Common.Models
         public int LoginTerm { get; set; }
         public UserRole Role { get; set; }
         public string? Address { get; set; }
-        public string? WorkArea { get; set; }
-        public string? Area { get; set; }
+        public Guid? WorkAreaId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
-
         public PasswordOtp? PasswordOtp { get; set; }
+        public WorkArea? WorkArea { get; set; }
 
     }
 }

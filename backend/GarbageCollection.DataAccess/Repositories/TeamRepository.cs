@@ -26,6 +26,16 @@ namespace GarbageCollection.DataAccess.Repositories
                 .ToListAsync()
                 .ContinueWith(r => (IEnumerable<Team>)r.Result);
 
+        public async Task<IReadOnlyList<Team>> GetByCollectorIdsAsync(IEnumerable<Guid> collectorIds)
+        {
+            var ids = collectorIds.ToList();
+            return await _context.Teams
+                .Include(t => t.Collector)
+                .Where(t => ids.Contains(t.CollectorId))
+                .OrderBy(t => t.Name)
+                .ToListAsync();
+        }
+
         public async Task<Team> CreateAsync(Team team)
         {
             _context.Teams.Add(team);

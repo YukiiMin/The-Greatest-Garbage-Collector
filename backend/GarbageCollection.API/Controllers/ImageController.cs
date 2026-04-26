@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using GarbageCollection.Common.DTOs;
 using GarbageCollection.Business.Interfaces;
@@ -5,6 +6,7 @@ using GarbageCollection.Business.Interfaces;
 namespace GarbageCollection.API.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/v1/[controller]")]
     public class ImageController : ControllerBase
     {
