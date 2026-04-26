@@ -11,14 +11,14 @@
             string refreshToken,
             IConfiguration configuration)
         {
-            var accessExpiryMinutes = int.TryParse(configuration["Jwt:AccessTokenExpiryMinutes"], out var a) ? a : 15;
+            var accessExpiryDays = int.TryParse(configuration["Jwt:AccessTokenExpiryDays"], out var a) ? a : 3;
             var refreshExpiryDays = int.TryParse(configuration["Jwt:RefreshTokenExpiryDays"], out var r) ? r : 7;
 
             var baseOptions = new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,               // set to false in dev if not using HTTPS
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Path = "/"
             };
 
@@ -29,7 +29,7 @@
                 Secure = baseOptions.Secure,
                 SameSite = baseOptions.SameSite,
                 Path = baseOptions.Path,
-                Expires = DateTimeOffset.UtcNow.AddMinutes(accessExpiryMinutes)
+                Expires = DateTimeOffset.UtcNow.AddDays(accessExpiryDays)
             };
 
             // Refresh token cookie
