@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace GarbageCollection.Common.DTOs.Enterprise
+namespace GarbageCollection.Common.DTOs.Collector
 {
-    public class CollectorDto
+    /// <summary>DTO cho CollectorHub (cơ sở vật chất của Collector org).</summary>
+    public class CollectorHubDto
     {
         [JsonPropertyName("id")]
         public Guid Id { get; set; }
@@ -42,7 +43,7 @@ namespace GarbageCollection.Common.DTOs.Enterprise
         public DateTime UpdatedAt { get; set; }
     }
 
-    public class SaveCollectorData
+    public class SaveCollectorHubData
     {
         [Required]
         [JsonPropertyName("name")]
@@ -53,7 +54,6 @@ namespace GarbageCollection.Common.DTOs.Enterprise
         public string PhoneNumber { get; set; } = string.Empty;
 
         [Required]
-        [EmailAddress]
         [JsonPropertyName("email")]
         public string Email { get; set; } = string.Empty;
 
@@ -74,9 +74,9 @@ namespace GarbageCollection.Common.DTOs.Enterprise
         public int? AssignedCapacity { get; set; }
     }
 
-    public class SaveCollectorRequest
+    public class SaveCollectorHubRequest
     {
         [Required]
-        public SaveCollectorData Data { get; set; } = null!;
+        public SaveCollectorHubData Data { get; set; } = null!;
     }
 }

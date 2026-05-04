@@ -1,7 +1,6 @@
 using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.DTOs.Admin;
 using GarbageCollection.Common.DTOs.Complaint;
-using GarbageCollection.Common.Enums;
 
 namespace GarbageCollection.Business.Interfaces
 {
@@ -32,12 +31,6 @@ namespace GarbageCollection.Business.Interfaces
             int limit,
             CancellationToken ct = default);
 
-        Task<(int, ApiResponse<AdminUserDto>)> ChangeRoleAsync(
-            string email,
-            Guid targetUserId,
-            ChangeRoleRequest request,
-            CancellationToken ct = default);
-
         Task<(int, ApiResponse<AdminUserDto>)> BanUserAsync(
             string email,
             Guid targetUserId,
@@ -61,17 +54,20 @@ namespace GarbageCollection.Business.Interfaces
         Task<(int, ApiResponse<object>)> DeleteEnterpriseAsync(
             string adminEmail, Guid id, CancellationToken ct);
 
-        // ── Setup accounts ────────────────────────────────────────────────────
+        // ── Create staff account ──────────────────────────────────────────────
 
-        // Bước 1: tạo enterprise hub (chưa link user)
-        Task<(int, ApiResponse<AdminEnterpriseDto>)> SetupEnterpriseUserAsync(
-            string adminEmail, AdminSetupEnterpriseRequest req, CancellationToken ct);
+        Task<(int, ApiResponse<AdminUserDto>)> CreateStaffAccountAsync(
+            string adminEmail, CreateStaffAccountRequest req, CancellationToken ct);
 
-        // Bước 2: gán enterprise cho user (tạo Staff + đổi role)
-        Task<(int, ApiResponse<AdminSetupResponseDto>)> AssignEnterpriseUserAsync(
-            string adminEmail, Guid enterpriseId, AssignEnterpriseRequest req, CancellationToken ct);
+        // ── EnterpriseStaff CRUD (admin-only) ─────────────────────────────────
 
-        Task<(int, ApiResponse<AdminSetupResponseDto>)> SetupCollectorUserAsync(
-            string adminEmail, AdminSetupCollectorRequest req, CancellationToken ct);
+        Task<(int, ApiResponse<List<AdminEnterpriseStaffDto>>)> GetEnterpriseStaffAsync(
+            string adminEmail, Guid enterpriseId, CancellationToken ct);
+
+        Task<(int, ApiResponse<AdminEnterpriseStaffDto>)> AddEnterpriseStaffAsync(
+            string adminEmail, Guid enterpriseId, AddEnterpriseStaffRequest req, CancellationToken ct);
+
+        Task<(int, ApiResponse<object>)> RemoveEnterpriseStaffAsync(
+            string adminEmail, Guid enterpriseId, Guid userId, CancellationToken ct);
     }
 }

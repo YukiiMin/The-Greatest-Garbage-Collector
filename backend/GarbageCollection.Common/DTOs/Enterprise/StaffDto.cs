@@ -14,9 +14,6 @@ namespace GarbageCollection.Common.DTOs.Enterprise
         [JsonPropertyName("user_full_name")]
         public string UserFullName { get; set; } = string.Empty;
 
-        [JsonPropertyName("collector_id")]
-        public Guid? CollectorId { get; set; }
-
         [JsonPropertyName("team_id")]
         public Guid? TeamId { get; set; }
 

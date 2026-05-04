@@ -6,7 +6,7 @@ namespace GarbageCollection.Common.Models
         public string Name { get; set; } = string.Empty;
         public decimal TotalCapacity { get; set; }
         public bool IsActive { get; set; } = true;
-        public Guid CollectorId { get; set; }
+        public Guid CollectorHubId { get; set; }
         public Guid? WorkAreaId { get; set; }
         public string? DispatchTime { get; set; } // e.g. "20:00"
         public bool RouteOptimized { get; set; } = false;
@@ -17,7 +17,7 @@ namespace GarbageCollection.Common.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation
-        public Collector Collector { get; set; } = null!;
+        public CollectorHub CollectorHub { get; set; } = null!;
         public WorkArea? WorkArea { get; set; }
     }
 }

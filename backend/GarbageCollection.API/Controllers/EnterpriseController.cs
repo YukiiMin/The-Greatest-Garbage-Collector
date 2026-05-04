@@ -2,13 +2,15 @@ using GarbageCollection.Business.Helpers;
 using GarbageCollection.Business.Interfaces;
 using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.DTOs.Enterprise;
+using GarbageCollection.Common.DTOs.Staff;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using CollectorDtoNs = GarbageCollection.Common.DTOs.Collector;
 
 namespace GarbageCollection.API.Controllers
 {
     [ApiController]
-    [Authorize]
+    [Authorize(Roles = "Enterprise")]
     [Route("api/v1/enterprise")]
     public sealed class EnterpriseController : ControllerBase
     {
@@ -148,11 +150,109 @@ namespace GarbageCollection.API.Controllers
             return StatusCode(statusCode, result);
         }
 
-        // ── Collectors ────────────────────────────────────────────────────────
+        // ── My Enterprise (read-only) ─────────────────────────────────────────
 
-        /// <summary>Danh sách collectors của enterprise.</summary>
+        /// <summary>Xem chi tiết enterprise mà staff này đang được phân công.</summary>
+        [HttpGet("hubs/mine")]
+        [ProducesResponseType(typeof(ApiResponse<StaffEnterpriseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetMyHub(CancellationToken ct)
+        {
+            var email = User.GetEmail();
+            if (string.IsNullOrWhiteSpace(email))
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
+
+            var (statusCode, result) = await _enterpriseService.GetMyEnterpriseAsync(email, ct);
+            return StatusCode(statusCode, result);
+        }
+
+        // ── CollectorHub CRUD ─────────────────────────────────────────────────
+
+        /// <summary>Danh sách CollectorHub thuộc enterprise.</summary>
+        [HttpGet("collector-hubs")]
+        [ProducesResponseType(typeof(ApiResponse<List<CollectorDtoNs.CollectorHubDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetCollectorHubs(CancellationToken ct)
+        {
+            var email = User.GetEmail();
+            if (string.IsNullOrWhiteSpace(email))
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
+
+            var (statusCode, result) = await _enterpriseService.GetCollectorHubsAsync(email, ct);
+            return StatusCode(statusCode, result);
+        }
+
+        /// <summary>Chi tiết một CollectorHub.</summary>
+        [HttpGet("collector-hubs/{id}")]
+        [ProducesResponseType(typeof(ApiResponse<CollectorDtoNs.CollectorHubDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetCollectorHubDetail([FromRoute] Guid id, CancellationToken ct)
+        {
+            var email = User.GetEmail();
+            if (string.IsNullOrWhiteSpace(email))
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
+
+            var (statusCode, result) = await _enterpriseService.GetCollectorHubDetailAsync(email, id, ct);
+            return StatusCode(statusCode, result);
+        }
+
+        /// <summary>Tạo CollectorHub mới (cần collector_id trong body).</summary>
+        [HttpPost("collector-hubs")]
+        [ProducesResponseType(typeof(ApiResponse<CollectorDtoNs.CollectorHubDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> CreateCollectorHub(
+            [FromBody] CollectorDtoNs.SaveCollectorHubRequest request, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponse<object>.Fail("invalid input", "INVALID_INPUT"));
+
+            var email = User.GetEmail();
+            if (string.IsNullOrWhiteSpace(email))
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
+
+            var (statusCode, result) = await _enterpriseService.CreateCollectorHubAsync(email, request, ct);
+            return StatusCode(statusCode, result);
+        }
+
+        /// <summary>Cập nhật CollectorHub.</summary>
+        [HttpPatch("collector-hubs/{id}")]
+        [ProducesResponseType(typeof(ApiResponse<CollectorDtoNs.CollectorHubDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateCollectorHub(
+            [FromRoute] Guid id,
+            [FromBody] CollectorDtoNs.SaveCollectorHubRequest request,
+            CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponse<object>.Fail("invalid input", "INVALID_INPUT"));
+
+            var email = User.GetEmail();
+            if (string.IsNullOrWhiteSpace(email))
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
+
+            var (statusCode, result) = await _enterpriseService.UpdateCollectorHubAsync(email, id, request, ct);
+            return StatusCode(statusCode, result);
+        }
+
+        /// <summary>Xóa CollectorHub (không có teams).</summary>
+        [HttpDelete("collector-hubs/{id}")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteCollectorHub([FromRoute] Guid id, CancellationToken ct)
+        {
+            var email = User.GetEmail();
+            if (string.IsNullOrWhiteSpace(email))
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
+
+            var (statusCode, result) = await _enterpriseService.DeleteCollectorHubAsync(email, id, ct);
+            return StatusCode(statusCode, result);
+        }
+
+        // ── Collectors (Collector orgs managed by Enterprise) ─────────────────
+
+        /// <summary>Danh sách Collector organizations của enterprise.</summary>
         [HttpGet("collectors")]
-        [ProducesResponseType(typeof(ApiResponse<List<CollectorDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<CollectorDtoNs.CollectorDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCollectors(CancellationToken ct)
         {
             var email = User.GetEmail();
@@ -163,9 +263,9 @@ namespace GarbageCollection.API.Controllers
             return StatusCode(statusCode, result);
         }
 
-        /// <summary>Chi tiết một collector.</summary>
+        /// <summary>Chi tiết một Collector organization.</summary>
         [HttpGet("collectors/{id}")]
-        [ProducesResponseType(typeof(ApiResponse<CollectorDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<CollectorDtoNs.CollectorDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetCollectorDetail(
             [FromRoute] Guid id, CancellationToken ct)
@@ -178,12 +278,12 @@ namespace GarbageCollection.API.Controllers
             return StatusCode(statusCode, result);
         }
 
-        /// <summary>Tạo collector mới.</summary>
+        /// <summary>Tạo Collector organization mới.</summary>
         [HttpPost("collectors")]
-        [ProducesResponseType(typeof(ApiResponse<CollectorDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<CollectorDtoNs.CollectorDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
         public async Task<IActionResult> CreateCollector(
-            [FromBody] SaveCollectorRequest request, CancellationToken ct)
+            [FromBody] CollectorDtoNs.SaveCollectorRequest request, CancellationToken ct)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<object>.Fail("invalid input", "INVALID_INPUT"));
@@ -196,13 +296,13 @@ namespace GarbageCollection.API.Controllers
             return StatusCode(statusCode, result);
         }
 
-        /// <summary>Cập nhật collector.</summary>
+        /// <summary>Cập nhật Collector organization.</summary>
         [HttpPatch("collectors/{id}")]
-        [ProducesResponseType(typeof(ApiResponse<CollectorDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<CollectorDtoNs.CollectorDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateCollector(
             [FromRoute] Guid id,
-            [FromBody] SaveCollectorRequest request,
+            [FromBody] CollectorDtoNs.SaveCollectorRequest request,
             CancellationToken ct)
         {
             if (!ModelState.IsValid)
@@ -216,7 +316,7 @@ namespace GarbageCollection.API.Controllers
             return StatusCode(statusCode, result);
         }
 
-        /// <summary>Xóa collector (không có teams).</summary>
+        /// <summary>Xóa collector (không có hubs).</summary>
         [HttpDelete("collectors/{id}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -262,7 +362,7 @@ namespace GarbageCollection.API.Controllers
             return StatusCode(statusCode, result);
         }
 
-        /// <summary>Tạo team mới dưới một collector.</summary>
+        /// <summary>Tạo team mới dưới một collector hub.</summary>
         [HttpPost("teams")]
         [ProducesResponseType(typeof(ApiResponse<TeamDetailDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
@@ -386,11 +486,11 @@ namespace GarbageCollection.API.Controllers
             return StatusCode(statusCode, result);
         }
 
-        // ── Staff management ──────────────────────────────────────────────────
+        // ── Team Staff (CollectorStaff) ────────────────────────────────────────
 
-        /// <summary>Danh sách staff trong một team.</summary>
+        /// <summary>Danh sách CollectorStaff trong một team.</summary>
         [HttpGet("teams/{teamId}/staff")]
-        [ProducesResponseType(typeof(ApiResponse<List<StaffDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<CollectorDtoNs.CollectorStaffDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTeamStaff(
             [FromRoute] Guid teamId, CancellationToken ct)
@@ -403,14 +503,14 @@ namespace GarbageCollection.API.Controllers
             return StatusCode(statusCode, result);
         }
 
-        /// <summary>Thêm staff vào team.</summary>
+        /// <summary>Thêm CollectorStaff vào team.</summary>
         [HttpPost("teams/{teamId}/staff")]
-        [ProducesResponseType(typeof(ApiResponse<StaffDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<CollectorDtoNs.CollectorStaffDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> AddTeamStaff(
             [FromRoute] Guid teamId,
-            [FromBody] AddStaffRequest request,
+            [FromBody] CollectorDtoNs.AddCollectorStaffRequest request,
             CancellationToken ct)
         {
             if (!ModelState.IsValid)
@@ -424,7 +524,7 @@ namespace GarbageCollection.API.Controllers
             return StatusCode(statusCode, result);
         }
 
-        /// <summary>Xóa staff khỏi team.</summary>
+        /// <summary>Xóa CollectorStaff khỏi team.</summary>
         [HttpDelete("teams/{teamId}/staff/{userId}")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]

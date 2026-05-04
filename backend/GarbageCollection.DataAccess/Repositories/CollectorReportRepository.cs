@@ -92,27 +92,12 @@ namespace GarbageCollection.DataAccess.Repositories
 
                 if (pointsEarned > 0)
                 {
-                    var userPoints = await _context.UserPoints.FindAsync(report.UserId);
-                    if (userPoints is null)
+                    var citizen = await _context.Users.FindAsync(report.UserId);
+                    if (citizen is not null)
                     {
-                        _context.UserPoints.Add(new UserPoints
-                        {
-                            UserId      = report.UserId,
-                            TotalPoints = pointsEarned,
-                            WeekPoints  = pointsEarned,
-                            MonthPoints = pointsEarned,
-                            YearPoints  = pointsEarned,
-                            UpdatedAt   = DateTime.UtcNow
-                        });
-                    }
-                    else
-                    {
-                        userPoints.TotalPoints += pointsEarned;
-                        userPoints.WeekPoints  += pointsEarned;
-                        userPoints.MonthPoints += pointsEarned;
-                        userPoints.YearPoints  += pointsEarned;
-                        userPoints.UpdatedAt    = DateTime.UtcNow;
-                        _context.UserPoints.Update(userPoints);
+                        citizen.TotalPoints += pointsEarned;
+                        citizen.UpdatedAt    = DateTime.UtcNow;
+                        _context.Users.Update(citizen);
                     }
                 }
 

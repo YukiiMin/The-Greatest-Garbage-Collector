@@ -15,6 +15,8 @@ namespace GarbageCollection.Common.Models
         /// <summary>ID của WorkArea cấp District mà enterprise phụ trách.</summary>
         public Guid? WorkAreaId { get; set; }
 
+        public DateTime? JoinHubAt { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

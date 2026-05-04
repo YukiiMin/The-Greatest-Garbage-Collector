@@ -11,17 +11,23 @@ namespace GarbageCollection.Business.Services
     public class CitizenReportService : ICitizenReportService
     {
         private readonly ICitizenReportRepository _reportRepository;
-        private readonly IUploadImageService _uploadImageService;
-        private readonly IUserRepository _userRepository;
+        private readonly IUploadImageService      _uploadImageService;
+        private readonly IUserRepository          _userRepository;
+        private readonly IWorkAreaRepository      _workAreaRepository;
+        private readonly IEnterpriseRepository    _enterpriseRepository;
 
         public CitizenReportService(
             ICitizenReportRepository reportRepository,
-            IUploadImageService uploadImageService,
-            IUserRepository userRepository)
+            IUploadImageService      uploadImageService,
+            IUserRepository          userRepository,
+            IWorkAreaRepository      workAreaRepository,
+            IEnterpriseRepository    enterpriseRepository)
         {
-            _reportRepository   = reportRepository;
-            _uploadImageService = uploadImageService;
-            _userRepository     = userRepository;
+            _reportRepository     = reportRepository;
+            _uploadImageService   = uploadImageService;
+            _userRepository       = userRepository;
+            _workAreaRepository   = workAreaRepository;
+            _enterpriseRepository = enterpriseRepository;
         }
 
         public async Task<CitizenReportResponseDto> CreateReportAsync(Guid userId, CreateCitizenReportDto dto)
@@ -38,12 +44,26 @@ namespace GarbageCollection.Business.Services
             if (string.IsNullOrWhiteSpace(user.Address))
                 throw new InvalidOperationException("ADDRESS_NOT_SET");
 
+            // Citizen phải thuộc Ward; Ward.ParentId là District của Enterprise phụ trách
+            var ward = await _workAreaRepository.GetByIdAsync(user.WorkAreaId.Value);
+            if (ward is null || ward.Type != "Ward")
+                throw new InvalidOperationException("WORK_AREA_MUST_BE_WARD");
+
+            // Tìm Enterprise phụ trách District này (ParentId = districtId)
+            Guid? enterpriseId = null;
+            if (ward.ParentId.HasValue)
+            {
+                var enterprise = await _enterpriseRepository.GetByWorkAreaIdAsync(ward.ParentId.Value);
+                enterpriseId = enterprise?.Id;
+            }
+
             var imageUrls = await _uploadImageService.UploadImagesAsync(dto.Images, "citizen-reports");
 
             var report = new CitizenReport
             {
                 UserId           = userId,
-                Address          = user?.Address,
+                EnterpriseId     = enterpriseId,
+                Address          = user.Address,
                 CitizenImageUrls = imageUrls,
                 Description      = dto.Description,
                 Types            = dto.Types.ToList(),
@@ -188,6 +208,7 @@ namespace GarbageCollection.Business.Services
             Address            = report.Address,
             Status             = report.Status.ToString(),
             UserId             = report.UserId,
+            EnterpriseId       = report.EnterpriseId,
             PointCategoryId    = report.PointCategoryId,
             Point              = report.Point,
             TeamId             = report.TeamId,

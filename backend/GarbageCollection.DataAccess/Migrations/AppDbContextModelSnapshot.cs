@@ -113,6 +113,10 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<Guid?>("EnterpriseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("enterprise_id");
+
                     b.Property<int?>("Point")
                         .HasColumnType("integer");
 
@@ -170,10 +174,6 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("address");
 
-                    b.Property<int?>("AssignedCapacity")
-                        .HasColumnType("integer")
-                        .HasColumnName("assigned_capacity");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -225,7 +225,105 @@ namespace GarbageCollection.DataAccess.Migrations
 
                     b.HasIndex("WorkAreaId");
 
-                    b.ToTable("collector_hub", (string)null);
+                    b.ToTable("collectors", (string)null);
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.CollectorHub", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("address");
+
+                    b.Property<int?>("AssignedCapacity")
+                        .HasColumnType("integer")
+                        .HasColumnName("assigned_capacity");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("decimal(9,6)")
+                        .HasColumnName("latitude");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("decimal(9,6)")
+                        .HasColumnName("longitude");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("WorkAreaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_area_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("WorkAreaId");
+
+                    b.ToTable("collector_hubs", (string)null);
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.CollectorStaff", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid?>("CollectorHubId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("collector_hub_id");
+
+                    b.Property<Guid>("CollectorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("collector_id");
+
+                    b.Property<DateTime?>("JoinTeamAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("join_team_at");
+
+                    b.Property<Guid?>("TeamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("team_id");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("CollectorHubId");
+
+                    b.HasIndex("CollectorId");
+
+                    b.HasIndex("TeamId");
+
+                    b.ToTable("collector_staffs", (string)null);
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Complaint", b =>
@@ -351,6 +449,10 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("character varying(320)")
                         .HasColumnName("email");
 
+                    b.Property<DateTime?>("JoinHubAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("join_hub_at");
+
                     b.Property<decimal?>("Latitude")
                         .HasColumnType("decimal(9,6)")
                         .HasColumnName("latitude");
@@ -387,6 +489,27 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.HasIndex("WorkAreaId");
 
                     b.ToTable("enterprise_hub", (string)null);
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.EnterpriseStaff", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("EnterpriseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("enterprise_id");
+
+                    b.Property<DateTime?>("JoinHubAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("join_hub_at");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("EnterpriseId");
+
+                    b.ToTable("enterprise_staffs", (string)null);
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.PointCategory", b =>
@@ -428,6 +551,49 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.HasIndex("EnterpriseId");
 
                     b.ToTable("point_categories", (string)null);
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.PointTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer")
+                        .HasColumnName("points");
+
+                    b.Property<Guid?>("ReportId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("report_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("point_transactions", (string)null);
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.RefreshToken", b =>
@@ -475,39 +641,6 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.ToTable("refresh_tokens", (string)null);
                 });
 
-            modelBuilder.Entity("GarbageCollection.Common.Models.Staff", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<Guid?>("CollectorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("collector_id");
-
-                    b.Property<Guid>("EnterpriseId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("enterprise_id");
-
-                    b.Property<DateTime?>("JoinTeamAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("join_team_at");
-
-                    b.Property<Guid?>("TeamId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("team_id");
-
-                    b.HasKey("UserId");
-
-                    b.HasIndex("CollectorId");
-
-                    b.HasIndex("EnterpriseId");
-
-                    b.HasIndex("TeamId");
-
-                    b.ToTable("staffs", (string)null);
-                });
-
             modelBuilder.Entity("GarbageCollection.Common.Models.Team", b =>
                 {
                     b.Property<Guid>("Id")
@@ -515,9 +648,9 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid>("CollectorId")
+                    b.Property<Guid>("CollectorHubId")
                         .HasColumnType("uuid")
-                        .HasColumnName("collector_id");
+                        .HasColumnName("collector_hub_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -568,7 +701,7 @@ namespace GarbageCollection.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CollectorId");
+                    b.HasIndex("CollectorHubId");
 
                     b.HasIndex("WorkAreaId");
 
@@ -687,6 +820,12 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("role");
 
+                    b.Property<int>("TotalPoints")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("total_points");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -705,46 +844,6 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.HasIndex("WorkAreaId");
 
                     b.ToTable("users", (string)null);
-                });
-
-            modelBuilder.Entity("GarbageCollection.Common.Models.UserPoints", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<bool>("LeaderboardOptOut")
-                        .HasColumnType("boolean")
-                        .HasColumnName("leaderboard_opt_out");
-
-                    b.Property<int>("MonthPoints")
-                        .HasColumnType("integer")
-                        .HasColumnName("month_points");
-
-                    b.Property<int>("TotalPoints")
-                        .HasColumnType("integer")
-                        .HasColumnName("total_points");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<int>("WeekPoints")
-                        .HasColumnType("integer")
-                        .HasColumnName("week_points");
-
-                    b.Property<string>("WorkAreaName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("work_area_name");
-
-                    b.Property<int>("YearPoints")
-                        .HasColumnType("integer")
-                        .HasColumnName("year_points");
-
-                    b.HasKey("UserId");
-
-                    b.ToTable("user_points", (string)null);
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.WorkArea", b =>
@@ -810,8 +909,7 @@ namespace GarbageCollection.DataAccess.Migrations
                         .WithMany()
                         .HasForeignKey("EnterpriseId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_collector_hub_enterprise_id");
+                        .IsRequired();
 
                     b.HasOne("GarbageCollection.Common.Models.WorkArea", "WorkArea")
                         .WithMany()
@@ -821,6 +919,49 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.Navigation("Enterprise");
 
                     b.Navigation("WorkArea");
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.CollectorHub", b =>
+                {
+                    b.HasOne("GarbageCollection.Common.Models.WorkArea", "WorkArea")
+                        .WithMany()
+                        .HasForeignKey("WorkAreaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("WorkArea");
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.CollectorStaff", b =>
+                {
+                    b.HasOne("GarbageCollection.Common.Models.CollectorHub", "CollectorHub")
+                        .WithMany()
+                        .HasForeignKey("CollectorHubId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GarbageCollection.Common.Models.Collector", "Collector")
+                        .WithMany()
+                        .HasForeignKey("CollectorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GarbageCollection.Common.Models.Team", "Team")
+                        .WithMany()
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GarbageCollection.Common.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Collector");
+
+                    b.Navigation("CollectorHub");
+
+                    b.Navigation("Team");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.Complaint", b =>
@@ -852,6 +993,25 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.Navigation("WorkArea");
                 });
 
+            modelBuilder.Entity("GarbageCollection.Common.Models.EnterpriseStaff", b =>
+                {
+                    b.HasOne("GarbageCollection.Common.Models.Enterprise", "Enterprise")
+                        .WithMany()
+                        .HasForeignKey("EnterpriseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GarbageCollection.Common.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Enterprise");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("GarbageCollection.Common.Models.PointCategory", b =>
                 {
                     b.HasOne("GarbageCollection.Common.Models.Enterprise", "Enterprise")
@@ -861,6 +1021,24 @@ namespace GarbageCollection.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Enterprise");
+                });
+
+            modelBuilder.Entity("GarbageCollection.Common.Models.PointTransaction", b =>
+                {
+                    b.HasOne("GarbageCollection.Common.Models.CitizenReport", "Report")
+                        .WithMany()
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GarbageCollection.Common.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Report");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.RefreshToken", b =>
@@ -874,44 +1052,11 @@ namespace GarbageCollection.DataAccess.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("GarbageCollection.Common.Models.Staff", b =>
-                {
-                    b.HasOne("GarbageCollection.Common.Models.Collector", "Collector")
-                        .WithMany()
-                        .HasForeignKey("CollectorId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("GarbageCollection.Common.Models.Enterprise", "Enterprise")
-                        .WithMany()
-                        .HasForeignKey("EnterpriseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GarbageCollection.Common.Models.Team", "Team")
-                        .WithMany()
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("GarbageCollection.Common.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Collector");
-
-                    b.Navigation("Enterprise");
-
-                    b.Navigation("Team");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("GarbageCollection.Common.Models.Team", b =>
                 {
-                    b.HasOne("GarbageCollection.Common.Models.Collector", "Collector")
+                    b.HasOne("GarbageCollection.Common.Models.CollectorHub", "CollectorHub")
                         .WithMany()
-                        .HasForeignKey("CollectorId")
+                        .HasForeignKey("CollectorHubId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -920,7 +1065,7 @@ namespace GarbageCollection.DataAccess.Migrations
                         .HasForeignKey("WorkAreaId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.Navigation("Collector");
+                    b.Navigation("CollectorHub");
 
                     b.Navigation("WorkArea");
                 });
@@ -944,17 +1089,6 @@ namespace GarbageCollection.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("WorkArea");
-                });
-
-            modelBuilder.Entity("GarbageCollection.Common.Models.UserPoints", b =>
-                {
-                    b.HasOne("GarbageCollection.Common.Models.User", "User")
-                        .WithOne()
-                        .HasForeignKey("GarbageCollection.Common.Models.UserPoints", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GarbageCollection.Common.Models.WorkArea", b =>

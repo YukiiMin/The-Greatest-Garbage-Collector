@@ -37,6 +37,7 @@ namespace GarbageCollection.DataAccess.Repositories
         }
 
         public async Task<(IReadOnlyList<CitizenReport> Items, int Total)> GetPagedForEnterpriseAsync(
+            Guid enterpriseId,
             IEnumerable<Guid> enterpriseTeamIds,
             IEnumerable<ReportStatus>? statuses,
             int page, int limit, CancellationToken ct = default)
@@ -45,7 +46,8 @@ namespace GarbageCollection.DataAccess.Repositories
 
             var query = _context.CitizenReports
                 .Include(r => r.User)
-                .Where(r => r.TeamId == null || teamIdList.Contains(r.TeamId.Value));
+                .Where(r => r.EnterpriseId == enterpriseId
+                         && (r.TeamId == null || teamIdList.Contains(r.TeamId.Value)));
 
             if (statuses != null)
             {
@@ -95,12 +97,15 @@ namespace GarbageCollection.DataAccess.Repositories
         }
 
         public async Task<IReadOnlyList<CitizenReport>> GetAllForEnterpriseAsync(
-            IEnumerable<Guid> teamIds, CancellationToken ct = default)
+            Guid enterpriseId,
+            IEnumerable<Guid> teamIds,
+            CancellationToken ct = default)
         {
             var teamIdList = teamIds.ToList();
             return await _context.CitizenReports
                 .AsNoTracking()
-                .Where(r => r.TeamId == null || teamIdList.Contains(r.TeamId.Value))
+                .Where(r => r.EnterpriseId == enterpriseId
+                         && (r.TeamId == null || teamIdList.Contains(r.TeamId.Value)))
                 .ToListAsync(ct);
         }
 

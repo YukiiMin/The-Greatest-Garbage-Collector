@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GarbageCollection.API.Controllers
 {
     [ApiController]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [Route("api/v1/admin")]
     public sealed class AdminController : ControllerBase
     {
@@ -125,31 +125,6 @@ namespace GarbageCollection.API.Controllers
         }
 
         /// <summary>
-        /// Đổi role của user.
-        /// Body: { "data": { "role": "Citizen|Collector|Enterprise|Admin" } }
-        /// </summary>
-        [HttpPatch("users/{id}/role")]
-        [ProducesResponseType(typeof(ApiResponse<AdminUserDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
-        public async Task<IActionResult> ChangeRole(
-            [FromRoute] Guid id,
-            [FromBody] ChangeRoleRequest request,
-            CancellationToken ct)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ApiResponse<object>.Fail("invalid input", "INVALID_INPUT"));
-
-            var email = User.GetEmail();
-            if (string.IsNullOrWhiteSpace(email))
-                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
-
-            var (statusCode, result) = await _adminService.ChangeRoleAsync(email, id, request, ct);
-            return StatusCode(statusCode, result);
-        }
-
-        /// <summary>
         /// Ban hoặc unban user.
         /// Body: { "data": { "is_banned": true|false } }
         /// </summary>
@@ -255,15 +230,15 @@ namespace GarbageCollection.API.Controllers
             return StatusCode(statusCode, result);
         }
 
-        // ── Setup accounts ────────────────────────────────────────────────────
+        // ── Create staff account ──────────────────────────────────────────────
 
-        /// <summary>Bước 1: Tạo enterprise hub (chỉ tạo Enterprise record, chưa link user).</summary>
-        [HttpPost("setup/enterprise")]
-        [ProducesResponseType(typeof(ApiResponse<AdminEnterpriseDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        /// <summary>Tạo tài khoản cho nhân viên Enterprise hoặc Collector. Password không hash.</summary>
+        [HttpPost("create/staff-account")]
+        [ProducesResponseType(typeof(ApiResponse<AdminUserDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> SetupEnterpriseUser(
-            [FromBody] AdminSetupEnterpriseRequest request, CancellationToken ct)
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> CreateStaffAccount(
+            [FromBody] CreateStaffAccountRequest request, CancellationToken ct)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<object>.Fail("invalid input", "INVALID_INPUT"));
@@ -272,28 +247,7 @@ namespace GarbageCollection.API.Controllers
             if (string.IsNullOrWhiteSpace(email))
                 return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
 
-            var (statusCode, result) = await _adminService.SetupEnterpriseUserAsync(email, request, ct);
-            return StatusCode(statusCode, result);
-        }
-
-        /// <summary>Bước 2: Gán enterprise cho user (tạo Staff record + đổi role → Enterprise).</summary>
-        [HttpPost("setup/enterprise/{enterpriseId}/assign")]
-        [ProducesResponseType(typeof(ApiResponse<AdminSetupResponseDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> AssignEnterpriseUser(
-            [FromRoute] Guid enterpriseId,
-            [FromBody] AssignEnterpriseRequest request,
-            CancellationToken ct)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ApiResponse<object>.Fail("invalid input", "INVALID_INPUT"));
-
-            var email = User.GetEmail();
-            if (string.IsNullOrWhiteSpace(email))
-                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
-
-            var (statusCode, result) = await _adminService.AssignEnterpriseUserAsync(email, enterpriseId, request, ct);
+            var (statusCode, result) = await _adminService.CreateStaffAccountAsync(email, request, ct);
             return StatusCode(statusCode, result);
         }
 
@@ -423,13 +377,31 @@ namespace GarbageCollection.API.Controllers
             }
         }
 
-        /// <summary>Tạo tài khoản collector: tạo Staff record + đổi role.</summary>
-        [HttpPost("setup/collector")]
-        [ProducesResponseType(typeof(ApiResponse<AdminSetupResponseDto>), StatusCodes.Status201Created)]
+        // ── EnterpriseStaff CRUD ──────────────────────────────────────────────
+
+        /// <summary>Danh sách staff của một enterprise.</summary>
+        [HttpGet("enterprises/{enterpriseId}/staff")]
+        [ProducesResponseType(typeof(ApiResponse<List<AdminEnterpriseStaffDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetEnterpriseStaff([FromRoute] Guid enterpriseId, CancellationToken ct)
+        {
+            var email = User.GetEmail();
+            if (string.IsNullOrWhiteSpace(email))
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
+
+            var (statusCode, result) = await _adminService.GetEnterpriseStaffAsync(email, enterpriseId, ct);
+            return StatusCode(statusCode, result);
+        }
+
+        /// <summary>Thêm user vào enterprise (tạo EnterpriseStaff record + đổi role).</summary>
+        [HttpPost("enterprises/{enterpriseId}/staff")]
+        [ProducesResponseType(typeof(ApiResponse<AdminEnterpriseStaffDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> SetupCollectorUser(
-            [FromBody] AdminSetupCollectorRequest request, CancellationToken ct)
+        public async Task<IActionResult> AddEnterpriseStaff(
+            [FromRoute] Guid enterpriseId,
+            [FromBody] AddEnterpriseStaffRequest request,
+            CancellationToken ct)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<object>.Fail("invalid input", "INVALID_INPUT"));
@@ -438,8 +410,26 @@ namespace GarbageCollection.API.Controllers
             if (string.IsNullOrWhiteSpace(email))
                 return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
 
-            var (statusCode, result) = await _adminService.SetupCollectorUserAsync(email, request, ct);
+            var (statusCode, result) = await _adminService.AddEnterpriseStaffAsync(email, enterpriseId, request, ct);
             return StatusCode(statusCode, result);
         }
+
+        /// <summary>Xóa staff khỏi enterprise.</summary>
+        [HttpDelete("enterprises/{enterpriseId}/staff/{userId}")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> RemoveEnterpriseStaff(
+            [FromRoute] Guid enterpriseId,
+            [FromRoute] Guid userId,
+            CancellationToken ct)
+        {
+            var email = User.GetEmail();
+            if (string.IsNullOrWhiteSpace(email))
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED", "Invalid token"));
+
+            var (statusCode, result) = await _adminService.RemoveEnterpriseStaffAsync(email, enterpriseId, userId, ct);
+            return StatusCode(statusCode, result);
+        }
+
     }
 }

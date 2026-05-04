@@ -9,8 +9,8 @@ namespace GarbageCollection.Common.DTOs.Enterprise
         public bool InWork { get; set; }
         public bool IsActive { get; set; }
         public decimal TotalCapacity { get; set; }
-        public Guid CollectorId { get; set; }
-        public string CollectorName { get; set; } = string.Empty;
+        public Guid CollectorHubId { get; set; }
+        public string CollectorHubName { get; set; } = string.Empty;
         public string? DispatchTime { get; set; }
         public int MemberCount { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -23,7 +23,7 @@ namespace GarbageCollection.Common.DTOs.Enterprise
         public string Name { get; set; } = string.Empty;
 
         [Required]
-        public Guid CollectorId { get; set; }
+        public Guid CollectorHubId { get; set; }
 
         public decimal TotalCapacity { get; set; }
 

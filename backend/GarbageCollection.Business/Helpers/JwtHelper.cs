@@ -31,7 +31,7 @@ namespace GarbageCollection.Business.Helpers
 
         // ── Access Token ──────────────────────────────────────────────────────
 
-        public (string token, DateTime expiresAt) GenerateAccessToken(string email, string fullName, int loginTerm)
+        public (string token, DateTime expiresAt) GenerateAccessToken(string email, string fullName, int loginTerm, string role = "")
         {
             var expiresAt = DateTime.UtcNow.AddMinutes(_accessTokenExpiryMinutes);
 
@@ -40,6 +40,7 @@ namespace GarbageCollection.Business.Helpers
                 new Claim(ClaimTypes.Email,      email),
                 new Claim("full_name",           fullName),
                 new Claim("login_term",          loginTerm.ToString()),
+                new Claim(ClaimTypes.Role,       role),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 

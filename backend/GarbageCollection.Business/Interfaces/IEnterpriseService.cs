@@ -1,5 +1,7 @@
 using GarbageCollection.Common.DTOs;
 using GarbageCollection.Common.DTOs.Enterprise;
+using GarbageCollection.Common.DTOs.Staff;
+using CollectorDtoNs = GarbageCollection.Common.DTOs.Collector;
 
 namespace GarbageCollection.Business.Interfaces
 {
@@ -28,18 +30,38 @@ namespace GarbageCollection.Business.Interfaces
         Task<(int, ApiResponse<EnterpriseReportDto>)> CompleteReportAsync(
             string email, Guid reportId, CancellationToken ct = default);
 
-        // ── Collectors ────────────────────────────────────────────────────────
-        Task<(int, ApiResponse<List<CollectorDto>>)> GetCollectorsAsync(
+        // ── My Enterprise (read-only for staff) ───────────────────────────────
+        Task<(int, ApiResponse<StaffEnterpriseDto>)> GetMyEnterpriseAsync(
             string email, CancellationToken ct = default);
 
-        Task<(int, ApiResponse<CollectorDto>)> GetCollectorDetailAsync(
+        // ── CollectorHub CRUD (enterprise manages collector hubs) ─────────────
+        Task<(int, ApiResponse<List<CollectorDtoNs.CollectorHubDto>>)> GetCollectorHubsAsync(
+            string email, CancellationToken ct = default);
+
+        Task<(int, ApiResponse<CollectorDtoNs.CollectorHubDto>)> GetCollectorHubDetailAsync(
             string email, Guid id, CancellationToken ct = default);
 
-        Task<(int, ApiResponse<CollectorDto>)> CreateCollectorAsync(
-            string email, SaveCollectorRequest request, CancellationToken ct = default);
+        Task<(int, ApiResponse<CollectorDtoNs.CollectorHubDto>)> CreateCollectorHubAsync(
+            string email, CollectorDtoNs.SaveCollectorHubRequest request, CancellationToken ct = default);
 
-        Task<(int, ApiResponse<CollectorDto>)> UpdateCollectorAsync(
-            string email, Guid id, SaveCollectorRequest request, CancellationToken ct = default);
+        Task<(int, ApiResponse<CollectorDtoNs.CollectorHubDto>)> UpdateCollectorHubAsync(
+            string email, Guid id, CollectorDtoNs.SaveCollectorHubRequest request, CancellationToken ct = default);
+
+        Task<(int, ApiResponse<object>)> DeleteCollectorHubAsync(
+            string email, Guid id, CancellationToken ct = default);
+
+        // ── Collector Orgs (managed by Enterprise) ────────────────────────────
+        Task<(int, ApiResponse<List<CollectorDtoNs.CollectorDto>>)> GetCollectorsAsync(
+            string email, CancellationToken ct = default);
+
+        Task<(int, ApiResponse<CollectorDtoNs.CollectorDto>)> GetCollectorDetailAsync(
+            string email, Guid id, CancellationToken ct = default);
+
+        Task<(int, ApiResponse<CollectorDtoNs.CollectorDto>)> CreateCollectorAsync(
+            string email, CollectorDtoNs.SaveCollectorRequest request, CancellationToken ct = default);
+
+        Task<(int, ApiResponse<CollectorDtoNs.CollectorDto>)> UpdateCollectorAsync(
+            string email, Guid id, CollectorDtoNs.SaveCollectorRequest request, CancellationToken ct = default);
 
         Task<(int, ApiResponse<object>)> DeleteCollectorAsync(
             string email, Guid id, CancellationToken ct = default);
@@ -73,12 +95,12 @@ namespace GarbageCollection.Business.Interfaces
         Task<(int, ApiResponse<object>)> DeletePointCategoryAsync(
             string email, Guid id, CancellationToken ct = default);
 
-        // ── Staff management ──────────────────────────────────────────────────
-        Task<(int, ApiResponse<List<StaffDto>>)> GetTeamStaffAsync(
+        // ── Team Staff (CollectorStaff in teams) ──────────────────────────────
+        Task<(int, ApiResponse<List<CollectorDtoNs.CollectorStaffDto>>)> GetTeamStaffAsync(
             string email, Guid teamId, CancellationToken ct = default);
 
-        Task<(int, ApiResponse<StaffDto>)> AddTeamStaffAsync(
-            string email, Guid teamId, AddStaffRequest request, CancellationToken ct = default);
+        Task<(int, ApiResponse<CollectorDtoNs.CollectorStaffDto>)> AddTeamStaffAsync(
+            string email, Guid teamId, CollectorDtoNs.AddCollectorStaffRequest request, CancellationToken ct = default);
 
         Task<(int, ApiResponse<object>)> RemoveTeamStaffAsync(
             string email, Guid teamId, Guid userId, CancellationToken ct = default);

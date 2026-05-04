@@ -11,21 +11,27 @@ namespace GarbageCollection.API.Controllers
 {
     [ApiController]
     [Route("api/v1/collector")]
-    [Authorize]
+    [Authorize(Roles = "Collector")]
     public class CollectorController : ControllerBase
     {
-        private readonly ICollectorReportService _collectorReportService;
-        private readonly IUserRepository _userRepository;
+        private readonly ICollectorReportService    _collectorReportService;
+        private readonly ICollectorService          _collectorService;
+        private readonly IUserRepository            _userRepository;
+        private readonly ICollectorStaffRepository  _collectorStaffRepository;
 
         private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png"];
         private const long MaxFileSizeBytes = 5 * 1024 * 1024;
 
         public CollectorController(
-            ICollectorReportService collectorReportService,
-            IUserRepository userRepository)
+            ICollectorReportService   collectorReportService,
+            ICollectorService         collectorService,
+            IUserRepository           userRepository,
+            ICollectorStaffRepository collectorStaffRepository)
         {
-            _collectorReportService = collectorReportService;
-            _userRepository         = userRepository;
+            _collectorReportService   = collectorReportService;
+            _collectorService         = collectorService;
+            _userRepository           = userRepository;
+            _collectorStaffRepository = collectorStaffRepository;
         }
 
         /// <summary>
@@ -219,6 +225,98 @@ namespace GarbageCollection.API.Controllers
 
             var result = await _collectorReportService.CollectReportAsync(user.Id, id, images);
             return Ok(ApiResponse<CollectReportResponseDto>.Ok(result, "report collected"));
+        }
+
+        // ── Staff ─────────────────────────────────────────────────────────────
+
+        /// <summary>Danh sách staff của Collector org.</summary>
+        [HttpGet("staff")]
+        [ProducesResponseType(typeof(ApiResponse<List<CollectorStaffDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetStaff(CancellationToken ct)
+        {
+            var email = User.GetEmail();
+            if (email is null)
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED"));
+
+            var (statusCode, result) = await _collectorService.GetStaffAsync(email, ct);
+            return StatusCode(statusCode, result);
+        }
+
+        /// <summary>Thêm staff vào Collector org.</summary>
+        [HttpPost("staff")]
+        [ProducesResponseType(typeof(ApiResponse<CollectorStaffDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> AddStaff([FromBody] AddCollectorStaffRequest request, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponse<object>.Fail("invalid input", "INVALID_INPUT"));
+
+            var email = User.GetEmail();
+            if (email is null)
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED"));
+
+            var (statusCode, result) = await _collectorService.AddStaffAsync(email, request, ct);
+            return StatusCode(statusCode, result);
+        }
+
+        /// <summary>Xóa staff khỏi Collector org.</summary>
+        [HttpDelete("staff/{userId:guid}")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> RemoveStaff(Guid userId, CancellationToken ct)
+        {
+            var email = User.GetEmail();
+            if (email is null)
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED"));
+
+            var (statusCode, result) = await _collectorService.RemoveStaffAsync(email, userId, ct);
+            return StatusCode(statusCode, result);
+        }
+
+        // ── My Hub ───────────────────────────────────────────────────────────
+
+        /// <summary>Xem chi tiết CollectorHub mà collector staff đang được phân công.</summary>
+        [HttpGet("my-hub")]
+        [ProducesResponseType(typeof(ApiResponse<CollectorHubDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetMyHub()
+        {
+            var email = User.GetEmail();
+            if (email is null)
+                return Unauthorized(ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED"));
+
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user is null)
+                return NotFound(ApiResponse<object>.Fail("account not found", "NOT_FOUND"));
+
+            var staff = await _collectorStaffRepository.GetByUserIdAsync(user.Id);
+            if (staff is null)
+                return NotFound(ApiResponse<object>.Fail("staff record not found", "NOT_FOUND"));
+
+            if (staff.CollectorHub is null)
+                return NotFound(ApiResponse<object>.Fail(
+                    "not assigned to any hub", "NOT_ASSIGNED",
+                    "You have not been assigned to a collector hub yet."));
+
+            var hub = staff.CollectorHub;
+            var dto = new CollectorHubDto
+            {
+                Id               = hub.Id,
+                Name             = hub.Name,
+                PhoneNumber      = hub.PhoneNumber,
+                Email            = hub.Email,
+                Address          = hub.Address,
+                Latitude         = hub.Latitude,
+                Longitude        = hub.Longitude,
+                WorkAreaId       = hub.WorkAreaId,
+                WorkAreaName     = hub.WorkArea?.Name,
+                AssignedCapacity = hub.AssignedCapacity,
+                CreatedAt        = hub.CreatedAt,
+                UpdatedAt        = hub.UpdatedAt
+            };
+
+            return Ok(ApiResponse<CollectorHubDto>.Ok(dto, "get my hub successfully"));
         }
     }
 }

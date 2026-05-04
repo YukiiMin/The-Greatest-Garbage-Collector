@@ -18,6 +18,9 @@ namespace GarbageCollection.Common.DTOs.User
         [JsonPropertyName("work_area_id")]
         public Guid? WorkAreaId { get; set; }
 
+        [JsonPropertyName("total_points")]
+        public int TotalPoints { get; set; }
+
         [JsonPropertyName("created_at")]
         public DateTime CreatedAt { get; set; }
 

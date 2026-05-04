@@ -88,5 +88,42 @@ namespace GarbageCollection.DataAccess.Repositories
             await _db.SaveChangesAsync(ct);
             return user;
         }
+
+        public async Task<(IReadOnlyList<User> Items, int Total)> GetLeaderboardPagedAsync(
+            Guid? workAreaId, int page, int limit, CancellationToken ct = default)
+        {
+            var query = _db.Users
+                .AsNoTracking()
+                .Include(u => u.WorkArea)
+                .Where(u => u.Role == UserRole.Citizen && !u.IsBanned);
+
+            if (workAreaId.HasValue)
+                query = query.Where(u => u.WorkAreaId == workAreaId);
+
+            var total = await query.CountAsync(ct);
+            var items = await query
+                .OrderByDescending(u => u.TotalPoints)
+                .Skip((page - 1) * limit)
+                .Take(limit)
+                .ToListAsync(ct);
+
+            return ((IReadOnlyList<User>)items, total);
+        }
+
+        public async Task<int> GetUserRankAsync(Guid userId, Guid? workAreaId, CancellationToken ct = default)
+        {
+            var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+            if (user is null) return 0;
+
+            var query = _db.Users
+                .AsNoTracking()
+                .Where(u => u.Role == UserRole.Citizen && !u.IsBanned);
+
+            if (workAreaId.HasValue)
+                query = query.Where(u => u.WorkAreaId == workAreaId);
+
+            var rank = await query.CountAsync(u => u.TotalPoints > user.TotalPoints, ct);
+            return rank + 1;
+        }
     }
 }

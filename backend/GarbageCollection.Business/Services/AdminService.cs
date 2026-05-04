@@ -14,7 +14,7 @@ namespace GarbageCollection.Business.Services
         private readonly IUserRepository _userRepository;
         private readonly IComplaintRepository _complaintRepository;
         private readonly IEnterpriseRepository _enterpriseRepository;
-        private readonly IStaffRepository _staffRepository;
+        private readonly IEnterpriseStaffRepository _enterpriseStaffRepository;
         private readonly ILogger<AdminService> _logger;
 
         // Valid statuses for listing: maps to ComplaintStatus enum values
@@ -35,14 +35,14 @@ namespace GarbageCollection.Business.Services
             IUserRepository userRepository,
             IComplaintRepository complaintRepository,
             IEnterpriseRepository enterpriseRepository,
-            IStaffRepository staffRepository,
+            IEnterpriseStaffRepository enterpriseStaffRepository,
             ILogger<AdminService> logger)
         {
-            _userRepository      = userRepository;
-            _complaintRepository = complaintRepository;
-            _enterpriseRepository = enterpriseRepository;
-            _staffRepository     = staffRepository;
-            _logger              = logger;
+            _userRepository            = userRepository;
+            _complaintRepository       = complaintRepository;
+            _enterpriseRepository      = enterpriseRepository;
+            _enterpriseStaffRepository = enterpriseStaffRepository;
+            _logger                    = logger;
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -339,48 +339,6 @@ namespace GarbageCollection.Business.Services
                 }));
         }
 
-        // ── PATCH /admin/users/{id}/role ──────────────────────────────────────
-
-        public async Task<(int, ApiResponse<AdminUserDto>)> ChangeRoleAsync(
-            string email,
-            Guid targetUserId,
-            ChangeRoleRequest request,
-            CancellationToken ct = default)
-        {
-            var caller = await _userRepository.GetByEmailAsync(email, ct);
-            if (caller is null)
-                return (401, ApiResponse<AdminUserDto>.Fail(
-                    "unauthorized", "UNAUTHORIZED", "User not found"));
-            if (caller.Role != UserRole.Admin)
-                return (403, ApiResponse<AdminUserDto>.Fail(
-                    "forbidden", "FORBIDDEN", "User is not admin"));
-
-            if (!Enum.TryParse<UserRole>(request.Data.Role, ignoreCase: true, out var newRole))
-                return (422, ApiResponse<AdminUserDto>.Fail(
-                    "invalid role", "INVALID_ROLE",
-                    "role must be one of: Citizen, Collector, Enterprise, Admin"));
-
-            var target = await _userRepository.GetByIdTrackedAsync(targetUserId, ct);
-            if (target is null)
-                return (404, ApiResponse<AdminUserDto>.Fail(
-                    "user not found", "NOT_FOUND", "User does not exist"));
-
-            // Prevent admin from demoting themselves
-            if (target.Id == caller.Id && newRole != UserRole.Admin)
-                return (409, ApiResponse<AdminUserDto>.Fail(
-                    "cannot demote yourself", "SELF_DEMOTION",
-                    "Admin cannot change their own role"));
-
-            target.Role      = newRole;
-            target.UpdatedAt = DateTime.UtcNow;
-            // Revoke all sessions so new role takes effect on next login
-            target.LoginTerm++;
-
-            await _userRepository.UpdateAsync(target, ct);
-
-            return (200, ApiResponse<AdminUserDto>.Success("role updated", MapToAdminUserDto(target)));
-        }
-
         // ── PATCH /admin/users/{id}/ban ───────────────────────────────────────
 
         public async Task<(int, ApiResponse<AdminUserDto>)> BanUserAsync(
@@ -521,7 +479,7 @@ namespace GarbageCollection.Business.Services
             if (enterprise is null)
                 return (404, ApiResponse<object>.Fail("enterprise not found", "NOT_FOUND"));
 
-            var staffs = await _staffRepository.GetByEnterpriseIdAsync(id);
+            var staffs = await _enterpriseStaffRepository.GetByEnterpriseIdAsync(id);
             if (staffs.Any())
                 return (409, ApiResponse<object>.Fail(
                     "enterprise has staff", "ENTERPRISE_HAS_STAFF",
@@ -531,132 +489,47 @@ namespace GarbageCollection.Business.Services
             return (200, ApiResponse<object>.Success("enterprise deleted", null!));
         }
 
-        // ── Setup accounts ────────────────────────────────────────────────────
+        // ── POST /admin/create/staff-account ─────────────────────────────────
 
-        public async Task<(int, ApiResponse<AdminEnterpriseDto>)> SetupEnterpriseUserAsync(
-            string adminEmail, AdminSetupEnterpriseRequest req, CancellationToken ct)
+        public async Task<(int, ApiResponse<AdminUserDto>)> CreateStaffAccountAsync(
+            string adminEmail, CreateStaffAccountRequest req, CancellationToken ct)
         {
             var admin = await _userRepository.GetByEmailAsync(adminEmail, ct);
             if (admin is null)
-                return (401, ApiResponse<AdminEnterpriseDto>.Fail("unauthorized", "UNAUTHORIZED"));
+                return (401, ApiResponse<AdminUserDto>.Fail("unauthorized", "UNAUTHORIZED"));
             if (admin.Role != UserRole.Admin)
-                return (403, ApiResponse<AdminEnterpriseDto>.Fail("forbidden", "FORBIDDEN"));
+                return (403, ApiResponse<AdminUserDto>.Fail("forbidden", "FORBIDDEN"));
 
-            var target = await _userRepository.GetByIdAsync(req.Data.UserId, ct);
-            if (target is null)
-                return (404, ApiResponse<AdminEnterpriseDto>.Fail("user not found", "NOT_FOUND"));
+            if (!Enum.TryParse<UserRole>(req.Data.Role, ignoreCase: true, out var role)
+                || (role != UserRole.Enterprise && role != UserRole.Collector))
+                return (422, ApiResponse<AdminUserDto>.Fail(
+                    "invalid role", "INVALID_ROLE",
+                    "role must be Enterprise or Collector"));
 
-            var existingEnterprise = await _enterpriseRepository.GetByEmailAsync(target.Email);
-            if (existingEnterprise is not null)
-                return (409, ApiResponse<AdminEnterpriseDto>.Fail(
-                    "enterprise already exists for this user", "ENTERPRISE_CONFLICT",
-                    "An enterprise is already linked to this user's email"));
+            var email = req.Data.Email.Trim().ToLowerInvariant();
+            var existing = await _userRepository.GetByEmailAsync(email, ct);
+            if (existing is not null)
+                return (409, ApiResponse<AdminUserDto>.Fail(
+                    "email already in use", "EMAIL_CONFLICT",
+                    "An account with this email already exists"));
 
-            var enterprise = new Enterprise
+            var user = new Common.Models.User
             {
-                Name        = req.Data.Name,
-                PhoneNumber = req.Data.PhoneNumber,
-                Email       = target.Email,
-                Address     = req.Data.Address,
-                WorkAreaId  = req.Data.WorkAreaId,
-                Latitude    = req.Data.Latitude,
-                Longitude   = req.Data.Longitude,
-                CreatedAt   = DateTime.UtcNow,
-                UpdatedAt   = DateTime.UtcNow
+                Email         = email,
+                FullName      = req.Data.FullName.Trim(),
+                PasswordHash  = req.Data.Password,
+                Role          = role,
+                EmailVerified = true,
+                IsBanned      = false,
+                Provider      = "local",
+                CreatedAt     = DateTime.UtcNow,
+                UpdatedAt     = DateTime.UtcNow
             };
-            var created = await _enterpriseRepository.CreateAsync(enterprise);
 
-            return (201, ApiResponse<AdminEnterpriseDto>.Success("enterprise hub created", MapToEnterpriseDto(created)));
-        }
+            await _userRepository.CreateAsync(user, ct);
+            await _userRepository.SaveChangesAsync(ct);
 
-        public async Task<(int, ApiResponse<AdminSetupResponseDto>)> AssignEnterpriseUserAsync(
-            string adminEmail, Guid enterpriseId, AssignEnterpriseRequest req, CancellationToken ct)
-        {
-            var admin = await _userRepository.GetByEmailAsync(adminEmail, ct);
-            if (admin is null)
-                return (401, ApiResponse<AdminSetupResponseDto>.Fail("unauthorized", "UNAUTHORIZED"));
-            if (admin.Role != UserRole.Admin)
-                return (403, ApiResponse<AdminSetupResponseDto>.Fail("forbidden", "FORBIDDEN"));
-
-            var enterprise = await _enterpriseRepository.GetByIdAsync(enterpriseId);
-            if (enterprise is null)
-                return (404, ApiResponse<AdminSetupResponseDto>.Fail("enterprise not found", "NOT_FOUND"));
-
-            var target = await _userRepository.GetByIdTrackedAsync(req.Data.UserId, ct);
-            if (target is null)
-                return (404, ApiResponse<AdminSetupResponseDto>.Fail("user not found", "NOT_FOUND"));
-
-            var existingStaff = await _staffRepository.GetByUserIdAsync(req.Data.UserId);
-            if (existingStaff is not null)
-                return (409, ApiResponse<AdminSetupResponseDto>.Fail(
-                    "user is already a staff member", "STAFF_CONFLICT",
-                    "This user already has a staff record"));
-
-            var staff = new Staff
-            {
-                UserId       = req.Data.UserId,
-                EnterpriseId = enterpriseId,
-                CollectorId  = null,
-                TeamId       = null,
-                JoinTeamAt   = null
-            };
-            await _staffRepository.CreateAsync(staff);
-
-            target.Role      = UserRole.Enterprise;
-            target.LoginTerm++;
-            target.UpdatedAt = DateTime.UtcNow;
-            await _userRepository.UpdateAsync(target, ct);
-
-            return (200, ApiResponse<AdminSetupResponseDto>.Success("enterprise assigned", new AdminSetupResponseDto
-            {
-                User      = MapToAdminUserDto(target),
-                ExtraData = MapToEnterpriseDto(enterprise)
-            }));
-        }
-
-        public async Task<(int, ApiResponse<AdminSetupResponseDto>)> SetupCollectorUserAsync(
-            string adminEmail, AdminSetupCollectorRequest req, CancellationToken ct)
-        {
-            var admin = await _userRepository.GetByEmailAsync(adminEmail, ct);
-            if (admin is null)
-                return (401, ApiResponse<AdminSetupResponseDto>.Fail("unauthorized", "UNAUTHORIZED"));
-            if (admin.Role != UserRole.Admin)
-                return (403, ApiResponse<AdminSetupResponseDto>.Fail("forbidden", "FORBIDDEN"));
-
-            var target = await _userRepository.GetByIdTrackedAsync(req.Data.UserId, ct);
-            if (target is null)
-                return (404, ApiResponse<AdminSetupResponseDto>.Fail("user not found", "NOT_FOUND"));
-
-            var enterprise = await _enterpriseRepository.GetByIdAsync(req.Data.EnterpriseId);
-            if (enterprise is null)
-                return (404, ApiResponse<AdminSetupResponseDto>.Fail("enterprise not found", "NOT_FOUND", "Enterprise does not exist"));
-
-            var existingStaff = await _staffRepository.GetByUserIdAsync(req.Data.UserId);
-            if (existingStaff is not null)
-                return (409, ApiResponse<AdminSetupResponseDto>.Fail(
-                    "user is already a staff member", "STAFF_CONFLICT",
-                    "This user already has a staff record"));
-
-            var staff = new Staff
-            {
-                UserId       = req.Data.UserId,
-                EnterpriseId = req.Data.EnterpriseId,
-                CollectorId  = null,
-                TeamId       = null,
-                JoinTeamAt   = null
-            };
-            await _staffRepository.CreateAsync(staff);
-
-            target.Role      = UserRole.Collector;
-            target.LoginTerm++;
-            target.UpdatedAt = DateTime.UtcNow;
-            await _userRepository.UpdateAsync(target, ct);
-
-            return (201, ApiResponse<AdminSetupResponseDto>.Success("collector user set up", new AdminSetupResponseDto
-            {
-                User      = MapToAdminUserDto(target),
-                ExtraData = null
-            }));
+            return (201, ApiResponse<AdminUserDto>.Success("staff account created", MapToAdminUserDto(user)));
         }
 
         // ── DTO mappers ───────────────────────────────────────────────────────
@@ -688,5 +561,103 @@ namespace GarbageCollection.Business.Services
             CreatedAt    = e.CreatedAt,
             UpdatedAt    = e.UpdatedAt
         };
+
+        private static AdminEnterpriseStaffDto MapToEnterpriseStaffDto(EnterpriseStaff s) => new()
+        {
+            UserId       = s.UserId,
+            UserEmail    = s.User?.Email    ?? string.Empty,
+            UserFullName = s.User?.FullName ?? string.Empty,
+            EnterpriseId = s.EnterpriseId,
+            JoinHubAt    = s.JoinHubAt
+        };
+
+        // ── EnterpriseStaff CRUD ──────────────────────────────────────────────
+
+        public async Task<(int, ApiResponse<List<AdminEnterpriseStaffDto>>)> GetEnterpriseStaffAsync(
+            string adminEmail, Guid enterpriseId, CancellationToken ct)
+        {
+            var admin = await _userRepository.GetByEmailAsync(adminEmail, ct);
+            if (admin is null)
+                return (401, ApiResponse<List<AdminEnterpriseStaffDto>>.Fail("unauthorized", "UNAUTHORIZED"));
+            if (admin.Role != UserRole.Admin)
+                return (403, ApiResponse<List<AdminEnterpriseStaffDto>>.Fail("forbidden", "FORBIDDEN"));
+
+            var enterprise = await _enterpriseRepository.GetByIdAsync(enterpriseId);
+            if (enterprise is null)
+                return (404, ApiResponse<List<AdminEnterpriseStaffDto>>.Fail("enterprise not found", "NOT_FOUND"));
+
+            var staff = await _enterpriseStaffRepository.GetByEnterpriseIdAsync(enterpriseId);
+            return (200, ApiResponse<List<AdminEnterpriseStaffDto>>.Success("success",
+                staff.Select(MapToEnterpriseStaffDto).ToList()));
+        }
+
+        public async Task<(int, ApiResponse<AdminEnterpriseStaffDto>)> AddEnterpriseStaffAsync(
+            string adminEmail, Guid enterpriseId, AddEnterpriseStaffRequest req, CancellationToken ct)
+        {
+            var admin = await _userRepository.GetByEmailAsync(adminEmail, ct);
+            if (admin is null)
+                return (401, ApiResponse<AdminEnterpriseStaffDto>.Fail("unauthorized", "UNAUTHORIZED"));
+            if (admin.Role != UserRole.Admin)
+                return (403, ApiResponse<AdminEnterpriseStaffDto>.Fail("forbidden", "FORBIDDEN"));
+
+            var enterprise = await _enterpriseRepository.GetByIdAsync(enterpriseId);
+            if (enterprise is null)
+                return (404, ApiResponse<AdminEnterpriseStaffDto>.Fail("enterprise not found", "NOT_FOUND"));
+
+            var target = await _userRepository.GetByIdAsync(req.Data.UserId, ct);
+            if (target is null)
+                return (404, ApiResponse<AdminEnterpriseStaffDto>.Fail("user not found", "NOT_FOUND"));
+
+            var existing = await _enterpriseStaffRepository.GetByUserIdAsync(req.Data.UserId);
+            if (existing is not null)
+                return (409, ApiResponse<AdminEnterpriseStaffDto>.Fail(
+                    "user is already a staff member", "STAFF_CONFLICT",
+                    "This user already has a staff record"));
+
+            // Đổi role → Enterprise và revoke sessions cũ
+            var tracked = await _userRepository.GetByIdTrackedAsync(req.Data.UserId, ct)!;
+            tracked!.Role      = UserRole.Enterprise;
+            tracked.LoginTerm++;
+            tracked.UpdatedAt  = DateTime.UtcNow;
+            await _userRepository.SaveChangesAsync(ct);
+
+            var staff = new EnterpriseStaff
+            {
+                UserId       = req.Data.UserId,
+                EnterpriseId = enterpriseId,
+                JoinHubAt    = DateTime.UtcNow
+            };
+            var created = await _enterpriseStaffRepository.CreateAsync(staff);
+            created.User = tracked;
+            return (201, ApiResponse<AdminEnterpriseStaffDto>.Success("staff added", MapToEnterpriseStaffDto(created)));
+        }
+
+        public async Task<(int, ApiResponse<object>)> RemoveEnterpriseStaffAsync(
+            string adminEmail, Guid enterpriseId, Guid userId, CancellationToken ct)
+        {
+            var admin = await _userRepository.GetByEmailAsync(adminEmail, ct);
+            if (admin is null)
+                return (401, ApiResponse<object>.Fail("unauthorized", "UNAUTHORIZED"));
+            if (admin.Role != UserRole.Admin)
+                return (403, ApiResponse<object>.Fail("forbidden", "FORBIDDEN"));
+
+            var staff = await _enterpriseStaffRepository.GetByUserIdAsync(userId);
+            if (staff is null || staff.EnterpriseId != enterpriseId)
+                return (404, ApiResponse<object>.Fail("staff not found in this enterprise", "NOT_FOUND"));
+
+            await _enterpriseStaffRepository.DeleteAsync(staff);
+
+            // Reset role → Citizen và revoke sessions
+            var user = await _userRepository.GetByIdTrackedAsync(userId, ct);
+            if (user is not null)
+            {
+                user.Role      = UserRole.Citizen;
+                user.LoginTerm++;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _userRepository.SaveChangesAsync(ct);
+            }
+
+            return (200, ApiResponse<object>.Success("staff removed", null!));
+        }
     }
 }

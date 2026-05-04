@@ -22,6 +22,8 @@ namespace GarbageCollection.Common.Models
 
         public Guid UserId { get; set; }
 
+        /// <summary>Enterprise phụ trách khu vực của citizen (tự động gán khi tạo report).</summary>
+        public Guid? EnterpriseId { get; set; }
 
         public Guid? PointCategoryId { get; set; }
 

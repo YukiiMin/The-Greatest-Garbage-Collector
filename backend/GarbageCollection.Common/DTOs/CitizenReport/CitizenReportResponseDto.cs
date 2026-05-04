@@ -10,6 +10,7 @@ namespace GarbageCollection.Common.DTOs.CitizenReport
         public string? Address { get; set; }
         public string Status { get; set; } = string.Empty;
         public Guid UserId { get; set; }
+        public Guid? EnterpriseId { get; set; }
         public Guid? PointCategoryId { get; set; }
         public int? Point { get; set; }
         public Guid? TeamId { get; set; }

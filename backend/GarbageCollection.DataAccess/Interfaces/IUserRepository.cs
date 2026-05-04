@@ -23,5 +23,10 @@ namespace GarbageCollection.DataAccess.Interfaces
             CancellationToken ct = default);
 
         Task<User> UpdateAsync(User user, CancellationToken ct = default);
+
+        Task<(IReadOnlyList<User> Items, int Total)> GetLeaderboardPagedAsync(
+            Guid? workAreaId, int page, int limit, CancellationToken ct = default);
+
+        Task<int> GetUserRankAsync(Guid userId, Guid? workAreaId, CancellationToken ct = default);
     }
 }

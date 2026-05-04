@@ -8,21 +8,24 @@ namespace GarbageCollection.Business.Services
 {
     public class UserService : IUserService
     {
-        private readonly IUserRepository         _userRepository;
-        private readonly IWorkAreaRepository     _workAreaRepository;
-        private readonly IUserPointsRepository   _userPointsRepository;
-        private readonly JwtHelper _jwtHelper;
+        private readonly IUserRepository              _userRepository;
+        private readonly IWorkAreaRepository          _workAreaRepository;
+        private readonly IEnterpriseStaffRepository   _enterpriseStaffRepository;
+        private readonly ICollectorStaffRepository    _collectorStaffRepository;
+        private readonly JwtHelper                    _jwtHelper;
 
         public UserService(
-            IUserRepository userRepository,
-            IWorkAreaRepository workAreaRepository,
-            IUserPointsRepository userPointsRepository,
-            JwtHelper jwtHelper)
+            IUserRepository            userRepository,
+            IWorkAreaRepository        workAreaRepository,
+            IEnterpriseStaffRepository enterpriseStaffRepository,
+            ICollectorStaffRepository  collectorStaffRepository,
+            JwtHelper                  jwtHelper)
         {
-            _userRepository       = userRepository;
-            _workAreaRepository   = workAreaRepository;
-            _userPointsRepository = userPointsRepository;
-            _jwtHelper            = jwtHelper;
+            _userRepository            = userRepository;
+            _workAreaRepository        = workAreaRepository;
+            _enterpriseStaffRepository = enterpriseStaffRepository;
+            _collectorStaffRepository  = collectorStaffRepository;
+            _jwtHelper                 = jwtHelper;
         }
 
         public async Task<UserProfileDto> GetProfileAsync(Guid userId)
@@ -30,7 +33,30 @@ namespace GarbageCollection.Business.Services
             var user = await _userRepository.GetByIdAsync(userId)
                 ?? throw new KeyNotFoundException("account not found");
 
-            return MapToDto(user);
+            var dto = MapToDto(user);
+
+            // Enterprise staff: lấy address + work_area từ Enterprise được phân
+            if (user.Role == Common.Enums.UserRole.Enterprise)
+            {
+                var staff = await _enterpriseStaffRepository.GetByUserIdAsync(userId);
+                if (staff?.Enterprise is not null)
+                {
+                    dto.Address    = staff.Enterprise.Address;
+                    dto.WorkAreaId = staff.Enterprise.WorkAreaId;
+                }
+            }
+            // Collector staff: lấy address + work_area từ CollectorHub được phân
+            else if (user.Role == Common.Enums.UserRole.Collector)
+            {
+                var staff = await _collectorStaffRepository.GetByUserIdAsync(userId);
+                if (staff?.CollectorHub is not null)
+                {
+                    dto.Address    = staff.CollectorHub.Address;
+                    dto.WorkAreaId = staff.CollectorHub.WorkAreaId;
+                }
+            }
+
+            return dto;
         }
 
         public async Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateUserProfileRequest data, string? avatarUrl = null)
@@ -66,9 +92,6 @@ namespace GarbageCollection.Business.Services
             user.WorkAreaId = req.WardId;
             if (req.Address != null)
                 user.Address = req.Address;
-
-            // Sync denormalized cache in user_points for leaderboard scope=Area
-            await _userPointsRepository.UpdateWorkAreaNameAsync(userId, workArea.Name);
 
             user.UpdatedAt = DateTime.UtcNow;
 
@@ -109,14 +132,15 @@ namespace GarbageCollection.Business.Services
 
         private static UserProfileDto MapToDto(User u) => new()
         {
-            Email      = u.Email,
-            Fullname   = u.FullName,
-            Role       = u.Role.ToString(),
-            Address    = u.Address,
-            AvatarUrl  = u.AvatarUrl,
-            WorkAreaId = u.WorkAreaId,
-            CreatedAt  = u.CreatedAt,
-            UpdatedAt  = u.UpdatedAt
+            Email       = u.Email,
+            Fullname    = u.FullName,
+            Role        = u.Role.ToString(),
+            Address     = u.Address,
+            AvatarUrl   = u.AvatarUrl,
+            WorkAreaId  = u.WorkAreaId,
+            TotalPoints = u.TotalPoints,
+            CreatedAt   = u.CreatedAt,
+            UpdatedAt   = u.UpdatedAt
         };
     }
 }

@@ -16,22 +16,32 @@ namespace GarbageCollection.DataAccess.Repositories
 
         public Task<Team?> GetByIdAsync(Guid id)
             => _context.Teams
-                .Include(t => t.Collector)
+                .Include(t => t.CollectorHub)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
-        public Task<IEnumerable<Team>> GetByCollectorIdAsync(Guid collectorId)
+        public Task<IEnumerable<Team>> GetByCollectorHubIdAsync(Guid collectorHubId)
             => _context.Teams
-                .Where(t => t.CollectorId == collectorId)
+                .Where(t => t.CollectorHubId == collectorHubId)
                 .OrderBy(t => t.Name)
                 .ToListAsync()
                 .ContinueWith(r => (IEnumerable<Team>)r.Result);
 
-        public async Task<IReadOnlyList<Team>> GetByCollectorIdsAsync(IEnumerable<Guid> collectorIds)
+        public async Task<IReadOnlyList<Team>> GetByCollectorHubIdsAsync(IEnumerable<Guid> collectorHubIds)
         {
-            var ids = collectorIds.ToList();
+            var ids = collectorHubIds.ToList();
             return await _context.Teams
-                .Include(t => t.Collector)
-                .Where(t => ids.Contains(t.CollectorId))
+                .Include(t => t.CollectorHub)
+                .Where(t => ids.Contains(t.CollectorHubId))
+                .OrderBy(t => t.Name)
+                .ToListAsync();
+        }
+
+        public async Task<IReadOnlyList<Team>> GetByIdsAsync(IEnumerable<Guid> ids)
+        {
+            var idList = ids.ToList();
+            return await _context.Teams
+                .Include(t => t.CollectorHub)
+                .Where(t => idList.Contains(t.Id))
                 .OrderBy(t => t.Name)
                 .ToListAsync();
         }

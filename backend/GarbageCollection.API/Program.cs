@@ -70,6 +70,13 @@ var secretKey  = jwtSection["SecretKey"] ?? throw new InvalidOperationException(
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // .NET 8 defaults to JsonWebTokenHandler which ignores claim type maps.
+        // UseSecurityTokenValidators = true forces the old JwtSecurityTokenHandler
+        // which correctly maps "role" → ClaimTypes.Role and "email" → ClaimTypes.Email,
+        // so [Authorize(Roles = "...")] and User.GetEmail() both work.
+        options.UseSecurityTokenValidators = true;
+        options.MapInboundClaims = true;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer           = true,
@@ -135,22 +142,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddSingleton<JwtHelper>();
 
 // Repositories
-builder.Services.AddScoped<ICitizenReportRepository, CitizenReportRepository>();
-builder.Services.AddScoped<IComplaintRepository,     ComplaintRepository>();
-builder.Services.AddScoped<IEnterpriseRepository,    EnterpriseRepository>();
-builder.Services.AddScoped<IStaffRepository,         StaffRepository>();
-builder.Services.AddScoped<IPointCategoryRepository, PointCategoryRepository>();
-builder.Services.AddScoped<ICollectorRepository,     CollectorRepository>();
-builder.Services.AddScoped<ITeamRepository,          TeamRepository>();
-builder.Services.AddScoped<IUserRepository,          UserRepository>();
-builder.Services.AddScoped<IRefreshTokenRepository,  RefreshTokenRepository>();
-builder.Services.AddScoped<IEmailOtpRepository,      EmailOtpRepository>();
-
-builder.Services.AddScoped<IPasswordOtpRepository, PasswordOtpRepository>();
-builder.Services.AddScoped<IUserPointsRepository,    UserPointsRepository>();
-builder.Services.AddScoped<ICollectorReportRepository, CollectorReportRepository>();
-builder.Services.AddScoped<ITeamSessionRepository,     TeamSessionRepository>();
-builder.Services.AddScoped<IWorkAreaRepository,        WorkAreaRepository>();
+builder.Services.AddScoped<ICitizenReportRepository,    CitizenReportRepository>();
+builder.Services.AddScoped<IComplaintRepository,        ComplaintRepository>();
+builder.Services.AddScoped<IEnterpriseRepository,       EnterpriseRepository>();
+builder.Services.AddScoped<IEnterpriseStaffRepository,  EnterpriseStaffRepository>();
+builder.Services.AddScoped<ICollectorRepository,        CollectorRepository>();
+builder.Services.AddScoped<ICollectorHubRepository,     CollectorHubRepository>();
+builder.Services.AddScoped<ICollectorStaffRepository,   CollectorStaffRepository>();
+builder.Services.AddScoped<IPointCategoryRepository,    PointCategoryRepository>();
+builder.Services.AddScoped<ITeamRepository,             TeamRepository>();
+builder.Services.AddScoped<IUserRepository,             UserRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository,     RefreshTokenRepository>();
+builder.Services.AddScoped<IEmailOtpRepository,         EmailOtpRepository>();
+builder.Services.AddScoped<IPasswordOtpRepository,      PasswordOtpRepository>();
+builder.Services.AddScoped<IPointTransactionRepository, PointTransactionRepository>();
+builder.Services.AddScoped<ICollectorReportRepository,  CollectorReportRepository>();
+builder.Services.AddScoped<ITeamSessionRepository,      TeamSessionRepository>();
+builder.Services.AddScoped<IWorkAreaRepository,         WorkAreaRepository>();
 
 // Services
 builder.Services.AddScoped<IUploadImageService,  UploadImageService>();
@@ -168,6 +176,7 @@ builder.Services.AddScoped<IAdminService,      AdminService>();
 builder.Services.AddScoped<IEnterpriseService, EnterpriseService>();
 builder.Services.AddScoped<IWorkAreaService,   WorkAreaService>();
 
+builder.Services.AddScoped<ICollectorService,  CollectorService>();
 builder.Services.AddScoped<IResendOtpService, ResendOtpService>();
 builder.Services.AddScoped<IPasswordOtpService, PasswordOtpService>();
 builder.Services.AddScoped<IAccountVerificationService, AccountVerificationService>();
@@ -198,8 +207,13 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title   = "GarbageCollection API",
-        Version = "v1"
+        Title       = "EcoConnect API",
+        Version     = "v1",
+        Description = "Test accounts — " +
+                      "Admin: admin@ecoconnect.vn / Admin@123456 | " +
+                      "Enterprise 1-3: enterprise@ecoconnect.vn / Enterprise@123456 | " +
+                      "Collector staff 1-3: collectorstaff1@ecoconnect.vn / Collectorstaff@123456 | " +
+                      "Citizen 1-10: citizen1@ecoconnect.vn / Citizen@123456"
     });
 
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -207,27 +221,76 @@ builder.Services.AddSwaggerGen(c =>
     if (File.Exists(xmlPath))
         c.IncludeXmlComments(xmlPath);
 
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    // ── Group endpoints by role · resource ─────────────────────────────
+    c.TagActionsBy(api =>
     {
-        Name        = "Authorization",
-        Type        = SecuritySchemeType.Http,
-        Scheme      = "Bearer",
-        BearerFormat = "JWT",
-        In          = ParameterLocation.Header,
-        Description = "Nhập token theo định dạng: Bearer {token}"
+        var route = api.RelativePath ?? "";
+        string tag = route switch
+        {
+            // Auth
+            _ when route.StartsWith("api/v1/auth")                                                   => "Auth",
+
+            // Citizen
+            _ when route.StartsWith("api/v1/users/citizen-reports") && route.Contains("complaints") => "Citizen · Complaints",
+            _ when route.StartsWith("api/v1/users/citizen-reports")                                 => "Citizen · Reports",
+            _ when route.StartsWith("api/v1/users/leaderboard")                                     => "Citizen · Leaderboard",
+            _ when route.StartsWith("api/v1/users")                                                 => "Citizen · Profile",
+
+            // Admin
+            _ when route.StartsWith("api/v1/admin/complaints")                                      => "Admin · Complaints",
+            _ when route.StartsWith("api/v1/admin/users")                                           => "Admin · Users",
+            _ when route.StartsWith("api/v1/admin/enterprises") && route.Contains("/staff")         => "Admin · Enterprise Staff",
+            _ when route.StartsWith("api/v1/admin/enterprises")                                     => "Admin · Enterprises",
+            _ when route.StartsWith("api/v1/admin/work-areas")                                      => "Admin · Work Areas",
+            _ when route.StartsWith("api/v1/admin/setup")                                           => "Admin · Setup",
+
+            // Enterprise staff
+            _ when route.StartsWith("api/v1/staff")                                                 => "Enterprise Staff · My Hub",
+            _ when route.StartsWith("api/v1/enterprise/dashboard")                                  => "Enterprise · Overview",
+            _ when route.StartsWith("api/v1/enterprise/reports")                                    => "Enterprise · Reports",
+            _ when route.StartsWith("api/v1/enterprise/hubs")                                       => "Enterprise · My Hub",
+            _ when route.StartsWith("api/v1/enterprise/collector-hubs")                             => "Enterprise · Collector Hubs",
+            _ when route.StartsWith("api/v1/enterprise/collectors")                                 => "Enterprise · Collectors",
+            _ when route.StartsWith("api/v1/enterprise/teams")                                      => "Enterprise · Teams",
+            _ when route.StartsWith("api/v1/enterprise/point-categories")                           => "Enterprise · Point Categories",
+
+            // Collector
+            _ when route.StartsWith("api/v1/collector/dashboard")                                   => "Collector · Overview",
+            _ when route.StartsWith("api/v1/collector/reports")                                     => "Collector · Reports",
+            _ when route.StartsWith("api/v1/collector/my-hub")                                      => "Collector · My Hub",
+            _ when route.StartsWith("api/v1/collector/staff")                                       => "Collector · Staff",
+
+            _ => api.ActionDescriptor.RouteValues["controller"] ?? "Other"
+        };
+        return [tag];
+    });
+
+    // Sort within each tag: GET → POST → PUT → PATCH → DELETE, then by path
+    var methodOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        { ["GET"] = 0, ["POST"] = 1, ["PUT"] = 2, ["PATCH"] = 3, ["DELETE"] = 4 };
+    c.OrderActionsBy(api =>
+    {
+        var order = methodOrder.TryGetValue(api.HttpMethod ?? "", out var o) ? o : 9;
+        return $"{api.RelativePath}_{order}";
     });
 
     c.UseInlineDefinitionsForEnums();
+
+    // Cookie-based auth (login trước rồi Swagger tự gửi cookie)
+    c.AddSecurityDefinition("cookieAuth", new OpenApiSecurityScheme
+    {
+        Name        = "accessToken",
+        Type        = SecuritySchemeType.ApiKey,
+        In          = ParameterLocation.Cookie,
+        Description = "HttpOnly cookie được set tự động sau khi login. Gọi POST /api/v1/auth/local-auth/login trước."
+    });
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id   = "Bearer"
-                }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "cookieAuth" }
             },
             Array.Empty<string>()
         }
@@ -289,13 +352,32 @@ app.UseCors("AllowFrontend");
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "GarbageCollection API v1");
-    c.RoutePrefix = "swagger";
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "EcoConnect API v1");
+    c.RoutePrefix            = "swagger";
+    c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List); // mỗi tag thu gọn, click để mở
+    c.DefaultModelsExpandDepth(-1);  // ẩn phần Schemas ở dưới cho gọn
+    c.DisplayRequestDuration();      // hiện thời gian request để debug
 });
 
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+
+// ── 12. Seed ────────────────────────────────────────────────────────────────────
+// RESEED_DB=true  → xóa toàn bộ và seed lại (dùng khi cần reset data)
+// SEED_DB=true    → chỉ seed nếu bảng trống (mặc định development)
+if (Environment.GetEnvironmentVariable("RESEED_DB") == "true")
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<GarbageCollection.DataAccess.Data.AppDbContext>();
+    await GarbageCollection.DataAccess.Data.DbSeeder.ReseedAsync(db);
+}
+else if (app.Environment.IsDevelopment() || Environment.GetEnvironmentVariable("SEED_DB") == "true")
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<GarbageCollection.DataAccess.Data.AppDbContext>();
+    await GarbageCollection.DataAccess.Data.DbSeeder.SeedAsync(db);
+}
 
 app.Run();

@@ -1,9 +1,8 @@
 using System.Text.Json.Serialization;
-using GarbageCollection.Common.DTOs.Enterprise;
 
 namespace GarbageCollection.Common.DTOs.Staff
 {
-    public class StaffHubDto
+    public class StaffEnterpriseDto
     {
         [JsonPropertyName("enterprise_id")]
         public Guid EnterpriseId { get; set; }
@@ -11,17 +10,19 @@ namespace GarbageCollection.Common.DTOs.Staff
         [JsonPropertyName("enterprise_name")]
         public string EnterpriseName { get; set; } = string.Empty;
 
-        [JsonPropertyName("collector_id")]
-        public Guid? CollectorId { get; set; }
+        [JsonPropertyName("enterprise_email")]
+        public string EnterpriseEmail { get; set; } = string.Empty;
 
-        /// <summary>Null nếu staff chưa được phân vào hub nào.</summary>
-        [JsonPropertyName("hub")]
-        public CollectorDto? Hub { get; set; }
+        [JsonPropertyName("enterprise_address")]
+        public string EnterpriseAddress { get; set; } = string.Empty;
 
-        [JsonPropertyName("team_id")]
-        public Guid? TeamId { get; set; }
+        [JsonPropertyName("work_area_id")]
+        public Guid? WorkAreaId { get; set; }
 
-        [JsonPropertyName("join_team_at")]
-        public DateTime? JoinTeamAt { get; set; }
+        [JsonPropertyName("work_area_name")]
+        public string? WorkAreaName { get; set; }
+
+        [JsonPropertyName("join_hub_at")]
+        public DateTime? JoinHubAt { get; set; }
     }
 }

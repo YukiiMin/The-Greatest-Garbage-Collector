@@ -9,7 +9,7 @@ namespace GarbageCollection.Business.Services
 {
     public class CollectorReportService : ICollectorReportService
     {
-        private readonly IStaffRepository _staffRepository;
+        private readonly ICollectorStaffRepository _collectorStaffRepository;
         private readonly ITeamRepository _teamRepository;
         private readonly ICollectorReportRepository _reportRepository;
         private readonly ICitizenReportRepository _citizenReportRepository;
@@ -18,7 +18,7 @@ namespace GarbageCollection.Business.Services
         private readonly ITeamSessionRepository _sessionRepository;
 
         public CollectorReportService(
-            IStaffRepository staffRepository,
+            ICollectorStaffRepository collectorStaffRepository,
             ITeamRepository teamRepository,
             ICollectorReportRepository reportRepository,
             ICitizenReportRepository citizenReportRepository,
@@ -26,7 +26,7 @@ namespace GarbageCollection.Business.Services
             IUploadImageService uploadImageService,
             ITeamSessionRepository sessionRepository)
         {
-            _staffRepository         = staffRepository;
+            _collectorStaffRepository = collectorStaffRepository;
             _teamRepository          = teamRepository;
             _reportRepository        = reportRepository;
             _citizenReportRepository = citizenReportRepository;
@@ -37,7 +37,7 @@ namespace GarbageCollection.Business.Services
 
         public async Task<CollectorReportsResponseDto> GetTodayReportsAsync(Guid userId)
         {
-            var staff = await _staffRepository.GetByUserIdAsync(userId)
+            var staff = await _collectorStaffRepository.GetByUserIdAsync(userId)
                 ?? throw new KeyNotFoundException("Staff record not found for this user.");
 
             if (staff.TeamId is null)
@@ -60,7 +60,7 @@ namespace GarbageCollection.Business.Services
 
         public async Task<StartShiftResponseDto> StartShiftAsync(Guid userId, Guid teamId, DateOnly date)
         {
-            var staff = await _staffRepository.GetByUserIdAsync(userId)
+            var staff = await _collectorStaffRepository.GetByUserIdAsync(userId)
                 ?? throw new KeyNotFoundException("Staff record not found for this user.");
 
             if (staff.TeamId != teamId)
@@ -84,9 +84,13 @@ namespace GarbageCollection.Business.Services
             }
 
             var nowUtc      = DateTime.UtcNow;
-            var dispatchUtc = new DateTime(nowUtc.Year, nowUtc.Month, nowUtc.Day, dispatchHour, dispatchMinute, 0, DateTimeKind.Utc);
-            if (nowUtc < dispatchUtc)
-                throw new InvalidOperationException($"too early — shift starts at {team.DispatchTime ?? "20:00"}");
+            var bypassTime  = Environment.GetEnvironmentVariable("BYPASS_DISPATCH_TIME") == "true";
+            if (!bypassTime)
+            {
+                var dispatchUtc = new DateTime(nowUtc.Year, nowUtc.Month, nowUtc.Day, dispatchHour, dispatchMinute, 0, DateTimeKind.Utc);
+                if (nowUtc < dispatchUtc)
+                    throw new InvalidOperationException($"too early — shift starts at {team.DispatchTime ?? "20:00"}");
+            }
 
             var queued = await _reportRepository.CountAssignedTodayAsync(teamId, date);
             if (queued == 0)
@@ -123,7 +127,7 @@ namespace GarbageCollection.Business.Services
             var report = await _citizenReportRepository.GetByIdAsync(reportId)
                 ?? throw new KeyNotFoundException($"report {reportId} not found");
 
-            var staff = await _staffRepository.GetByUserIdAsync(userId)
+            var staff = await _collectorStaffRepository.GetByUserIdAsync(userId)
                 ?? throw new UnauthorizedAccessException("staff record not found");
 
             if (report.TeamId != staff.TeamId)
@@ -158,7 +162,7 @@ namespace GarbageCollection.Business.Services
             var report = await _citizenReportRepository.GetByIdAsync(reportId)
                 ?? throw new KeyNotFoundException($"report {reportId} not found");
 
-            var staff = await _staffRepository.GetByUserIdAsync(userId)
+            var staff = await _collectorStaffRepository.GetByUserIdAsync(userId)
                 ?? throw new UnauthorizedAccessException("staff record not found");
 
             if (report.TeamId != staff.TeamId)
@@ -219,7 +223,7 @@ namespace GarbageCollection.Business.Services
 
         public async Task<EndShiftResponseDto> EndShiftAsync(Guid userId, Guid teamId, DateOnly date)
         {
-            var staff = await _staffRepository.GetByUserIdAsync(userId)
+            var staff = await _collectorStaffRepository.GetByUserIdAsync(userId)
                 ?? throw new KeyNotFoundException("staff record not found");
 
             if (staff.TeamId != teamId)
@@ -264,7 +268,7 @@ namespace GarbageCollection.Business.Services
 
         public async Task<CollectorDashboardData> GetDashboardAsync(Guid userId)
         {
-            var staff = await _staffRepository.GetByUserIdAsync(userId)
+            var staff = await _collectorStaffRepository.GetByUserIdAsync(userId)
                 ?? throw new KeyNotFoundException("staff record not found");
 
             if (staff.TeamId is null)
@@ -274,97 +278,124 @@ namespace GarbageCollection.Business.Services
             var reports  = await _reportRepository.GetByTeamSinceAsync(staff.TeamId.Value, since);
             var sessions = await _sessionRepository.GetByTeamSinceAsync(staff.TeamId.Value, since);
 
-            // ── Overview ──────────────────────────────────────────────────────
-            var allTypes = Enum.GetValues<WasteType>();
+            // ── Overview (toàn bộ từ lúc join team) ──────────────────────────
+            var allTypes      = Enum.GetValues<WasteType>();
+            var collectedList = reports.Where(r => r.Status == ReportStatus.Collected).ToList();
+            var failedList    = reports.Where(r => r.Status == ReportStatus.Failed).ToList();
 
             var overview = new OverviewDto
             {
                 Total     = reports.Count,
-                Collected = reports.Count(r => r.Status == ReportStatus.Collected),
-                Failed    = reports.Count(r => r.Status == ReportStatus.Failed),
+                Collected = collectedList.Count,
+                Failed    = failedList.Count,
                 ByType    = allTypes.Select(t => new TypeCountDto
                 {
                     Type      = t.ToString(),
-                    Collected = reports.Count(r => r.Status == ReportStatus.Collected && r.Types.Contains(t))
+                    Collected = collectedList.Count(r => r.Types.Contains(t))
                 }).ToList()
             };
 
             var capacityOverview = new CapacityOverviewDto
             {
-                Total  = reports.Where(r => r.Status == ReportStatus.Collected).Sum(r => r.ActualCapacityKg ?? 0m),
+                Total  = collectedList.Sum(r => r.ActualCapacityKg ?? 0m),
                 ByType = allTypes.Select(t => new TypeCapacityDto
                 {
                     Type  = t.ToString(),
-                    Total = reports
-                        .Where(r => r.Status == ReportStatus.Collected && r.Types.Contains(t))
-                        .Sum(r => r.ActualCapacityKg ?? 0m)
+                    Total = collectedList.Where(r => r.Types.Contains(t)).Sum(r => r.ActualCapacityKg ?? 0m)
                 }).ToList()
             };
 
             // ── Monthly Stats ─────────────────────────────────────────────────
-            var monthlyStats = reports
-                .GroupBy(r => r.ReportAt.ToString("yyyy-MM"))
-                .Select(g => new MonthlyStatDto
-                {
-                    Month     = g.Key,
-                    Total     = g.Count(),
-                    Collected = g.Count(r => r.Status == ReportStatus.Collected),
-                    Failed    = g.Count(r => r.Status == ReportStatus.Failed),
-                    ByType    = allTypes.Select(t => new TypeCountDto
-                    {
-                        Type      = t.ToString(),
-                        Collected = g.Count(r => r.Status == ReportStatus.Collected && r.Types.Contains(t))
-                    }).ToList()
-                })
-                .OrderBy(x => x.Month)
-                .ToList();
+            // Total: theo tháng report được tạo (intake)
+            // Collected/Failed: theo tháng collector thực sự xử lý (CollectedAt / UpdatedAt)
+            var intakeMonthsCol = reports.Select(r => r.ReportAt.ToString("yyyy-MM"));
+            var outputMonthsCol = collectedList.Where(r => r.CollectedAt.HasValue)
+                                               .Select(r => r.CollectedAt!.Value.ToString("yyyy-MM"))
+                                  .Concat(failedList.Where(r => r.UpdatedAt.HasValue)
+                                                    .Select(r => r.UpdatedAt!.Value.ToString("yyyy-MM")));
+            var allMonthsCol = intakeMonthsCol.Concat(outputMonthsCol).Distinct().OrderBy(x => x).ToList();
 
-            var monthlyCapacity = reports
-                .Where(r => r.Status == ReportStatus.Collected)
-                .GroupBy(r => r.ReportAt.ToString("yyyy-MM"))
-                .Select(g => new MonthlyCapacityDto
+            var monthlyStats = allMonthsCol.Select(month => new MonthlyStatDto
+            {
+                Month     = month,
+                Total     = reports.Count(r => r.ReportAt.ToString("yyyy-MM") == month),
+                Collected = collectedList.Count(r => r.CollectedAt.HasValue
+                                                  && r.CollectedAt.Value.ToString("yyyy-MM") == month),
+                Failed    = failedList.Count(r => r.UpdatedAt.HasValue
+                                               && r.UpdatedAt.Value.ToString("yyyy-MM") == month),
+                ByType    = allTypes.Select(t => new TypeCountDto
                 {
-                    Month  = g.Key,
-                    Total  = g.Sum(r => r.ActualCapacityKg ?? 0m),
-                    ByType = allTypes.Select(t => new TypeCapacityDto
+                    Type      = t.ToString(),
+                    Collected = collectedList.Count(r => r.CollectedAt.HasValue
+                                                      && r.CollectedAt.Value.ToString("yyyy-MM") == month
+                                                      && r.Types.Contains(t))
+                }).ToList()
+            }).ToList();
+
+            var monthlyCapacity = allMonthsCol
+                .Where(month => collectedList.Any(r => r.CollectedAt.HasValue
+                                                    && r.CollectedAt.Value.ToString("yyyy-MM") == month))
+                .Select(month =>
+                {
+                    var slice = collectedList.Where(r => r.CollectedAt.HasValue
+                                                      && r.CollectedAt.Value.ToString("yyyy-MM") == month).ToList();
+                    return new MonthlyCapacityDto
                     {
-                        Type  = t.ToString(),
-                        Total = g.Where(r => r.Types.Contains(t)).Sum(r => r.ActualCapacityKg ?? 0m)
-                    }).ToList()
+                        Month  = month,
+                        Total  = slice.Sum(r => r.ActualCapacityKg ?? 0m),
+                        ByType = allTypes.Select(t => new TypeCapacityDto
+                        {
+                            Type  = t.ToString(),
+                            Total = slice.Where(r => r.Types.Contains(t)).Sum(r => r.ActualCapacityKg ?? 0m)
+                        }).ToList()
+                    };
                 })
                 .OrderBy(x => x.Month)
                 .ToList();
 
             // ── Daily Stats ───────────────────────────────────────────────────
-            var dailyStats = reports
-                .GroupBy(r => r.ReportAt.ToString("yyyy-MM-dd"))
-                .Select(g => new DailyStatDto
-                {
-                    Date      = g.Key,
-                    Total     = g.Count(),
-                    Collected = g.Count(r => r.Status == ReportStatus.Collected),
-                    Failed    = g.Count(r => r.Status == ReportStatus.Failed),
-                    ByType    = allTypes.Select(t => new TypeCountDto
-                    {
-                        Type      = t.ToString(),
-                        Collected = g.Count(r => r.Status == ReportStatus.Collected && r.Types.Contains(t))
-                    }).ToList()
-                })
-                .OrderBy(x => x.Date)
-                .ToList();
+            // Collected/Failed: theo ngày collector thực sự xử lý
+            var intakeDaysCol = reports.Select(r => r.ReportAt.ToString("yyyy-MM-dd"));
+            var outputDaysCol = collectedList.Where(r => r.CollectedAt.HasValue)
+                                             .Select(r => r.CollectedAt!.Value.ToString("yyyy-MM-dd"))
+                                .Concat(failedList.Where(r => r.UpdatedAt.HasValue)
+                                                  .Select(r => r.UpdatedAt!.Value.ToString("yyyy-MM-dd")));
+            var allDaysCol = intakeDaysCol.Concat(outputDaysCol).Distinct().OrderBy(x => x).ToList();
 
-            var dailyCapacity = reports
-                .Where(r => r.Status == ReportStatus.Collected)
-                .GroupBy(r => r.ReportAt.ToString("yyyy-MM-dd"))
-                .Select(g => new DailyCapacityDto
+            var dailyStats = allDaysCol.Select(date => new DailyStatDto
+            {
+                Date      = date,
+                Total     = reports.Count(r => r.ReportAt.ToString("yyyy-MM-dd") == date),
+                Collected = collectedList.Count(r => r.CollectedAt.HasValue
+                                                  && r.CollectedAt.Value.ToString("yyyy-MM-dd") == date),
+                Failed    = failedList.Count(r => r.UpdatedAt.HasValue
+                                               && r.UpdatedAt.Value.ToString("yyyy-MM-dd") == date),
+                ByType    = allTypes.Select(t => new TypeCountDto
                 {
-                    Date   = g.Key,
-                    Total  = g.Sum(r => r.ActualCapacityKg ?? 0m),
-                    ByType = allTypes.Select(t => new TypeCapacityDto
+                    Type      = t.ToString(),
+                    Collected = collectedList.Count(r => r.CollectedAt.HasValue
+                                                      && r.CollectedAt.Value.ToString("yyyy-MM-dd") == date
+                                                      && r.Types.Contains(t))
+                }).ToList()
+            }).ToList();
+
+            var dailyCapacity = allDaysCol
+                .Where(date => collectedList.Any(r => r.CollectedAt.HasValue
+                                                   && r.CollectedAt.Value.ToString("yyyy-MM-dd") == date))
+                .Select(date =>
+                {
+                    var slice = collectedList.Where(r => r.CollectedAt.HasValue
+                                                      && r.CollectedAt.Value.ToString("yyyy-MM-dd") == date).ToList();
+                    return new DailyCapacityDto
                     {
-                        Type  = t.ToString(),
-                        Total = g.Where(r => r.Types.Contains(t)).Sum(r => r.ActualCapacityKg ?? 0m)
-                    }).ToList()
+                        Date   = date,
+                        Total  = slice.Sum(r => r.ActualCapacityKg ?? 0m),
+                        ByType = allTypes.Select(t => new TypeCapacityDto
+                        {
+                            Type  = t.ToString(),
+                            Total = slice.Where(r => r.Types.Contains(t)).Sum(r => r.ActualCapacityKg ?? 0m)
+                        }).ToList()
+                    };
                 })
                 .OrderBy(x => x.Date)
                 .ToList();

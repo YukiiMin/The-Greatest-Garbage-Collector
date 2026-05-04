@@ -18,7 +18,7 @@ namespace GarbageCollection.Business.Helpers
             RegexOptions.IgnoreCase);
 
         private static readonly Regex PasswordRegex = new(
-            @"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+\[\]{}|;':"",./<>?`~\\]).{8,16}$");
+            @"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+\[\]{}|;':"",./<>?`~\\]).{8,64}$");
 
         public static bool IsValidEmail(string? email)
             => !string.IsNullOrWhiteSpace(email) && EmailRegex.IsMatch(email);
@@ -36,8 +36,8 @@ namespace GarbageCollection.Business.Helpers
                 return "Password must not be empty.";
             if (password.Any(char.IsWhiteSpace))
                 return "Password must not contain whitespace.";
-            if (password.Length < 8 || password.Length > 16)
-                return "Password must be between 8 and 16 characters.";
+            if (password.Length < 8 || password.Length > 64)
+                return "Password must be between 8 and 64 characters.";
             if (!password.Any(char.IsUpper))
                 return "Password must contain at least one uppercase letter.";
             if (!password.Any(char.IsLower))

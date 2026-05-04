@@ -132,7 +132,7 @@ namespace GarbageCollection.Business.Services
             }
 
             // STEP 4 – Generate tokens
-            var (accessToken, _) = _jwtHelper.GenerateAccessToken(user.Email, user.FullName, user.LoginTerm);
+            var (accessToken, _) = _jwtHelper.GenerateAccessToken(user.Email, user.FullName, user.LoginTerm, user.Role.ToString());
             var (rawRefresh, refreshJwt, refreshExpiry) = _jwtHelper.GenerateRefreshToken(user.Email);
 
             // Persist hashed refresh token (revoke old ones first to enforce single-session)
@@ -278,7 +278,7 @@ namespace GarbageCollection.Business.Services
 
             // ── STEP 6: Rotation — generate a new token pair ──────────────────
             var (newAccessToken, _) =
-                _jwtHelper.GenerateAccessToken(user.Email, user.FullName, user.LoginTerm);
+                _jwtHelper.GenerateAccessToken(user.Email, user.FullName, user.LoginTerm, user.Role.ToString());
             var (newRawRefresh, newRefreshJwt, newRefreshExpiry) =
                 _jwtHelper.GenerateRefreshToken(user.Email);
 

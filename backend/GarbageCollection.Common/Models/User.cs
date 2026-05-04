@@ -20,6 +20,8 @@ namespace GarbageCollection.Common.Models
         public UserRole Role { get; set; }
         public string? Address { get; set; }
         public Guid? WorkAreaId { get; set; }
+        public int TotalPoints { get; set; } = 0;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

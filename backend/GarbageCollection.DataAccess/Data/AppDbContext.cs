@@ -15,9 +15,12 @@ namespace GarbageCollection.DataAccess.Data
         public DbSet<CitizenReport> CitizenReports { get; set; }
         public DbSet<Complaint> Complaints { get; set; }
         public DbSet<Enterprise> Enterprises { get; set; }
+        public DbSet<EnterpriseStaff> EnterpriseStaffs { get; set; }
+        // Collector — tổ chức thu gom cấp Phường (entity MỚI)
         public DbSet<Collector> Collectors { get; set; }
+        public DbSet<CollectorHub> CollectorHubs { get; set; }
+        public DbSet<CollectorStaff> CollectorStaffs { get; set; }
         public DbSet<Team> Teams { get; set; }
-        public DbSet<Staff> Staffs { get; set; }
         public DbSet<PointCategory> PointCategories { get; set; }
         public DbSet<TeamSession> TeamSessions => Set<TeamSession>();
         public DbSet<WorkArea> WorkAreas => Set<WorkArea>();
@@ -28,7 +31,7 @@ namespace GarbageCollection.DataAccess.Data
         public DbSet<EmailOtp> EmailOtps => Set<EmailOtp>();
 
         public DbSet<PasswordOtp> PasswordOtps => Set<PasswordOtp>();
-        public DbSet<UserPoints> UserPoints => Set<UserPoints>();
+        public DbSet<PointTransaction> PointTransactions => Set<PointTransaction>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -86,6 +89,7 @@ namespace GarbageCollection.DataAccess.Data
                 entity.Property(e => e.ActualCapacityKg).HasColumnName("actual_capacity_kg").HasColumnType("decimal(10,2)");
                 entity.Property(e => e.Status).HasConversion<string>();
                 entity.Property(e => e.UserId).HasColumnName("citizen_id");
+                entity.Property(e => e.EnterpriseId).HasColumnName("enterprise_id");
                 entity.Property(e => e.AssignBy).HasColumnName("assign_by");
                 entity.Property(e => e.AssignAt).HasColumnName("assign_at");
                 entity.Property(e => e.Deadline).HasColumnName("deadline");
@@ -180,17 +184,15 @@ namespace GarbageCollection.DataAccess.Data
                  .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ── Staff ─────────────────────────────────────────────────────────
-            modelBuilder.Entity<Staff>(e =>
+            // ── EnterpriseStaff ───────────────────────────────────────────────
+            modelBuilder.Entity<EnterpriseStaff>(e =>
             {
-                e.ToTable("staffs");
+                e.ToTable("enterprise_staffs");
                 e.HasKey(s => s.UserId);
 
                 e.Property(s => s.UserId).HasColumnName("user_id");
                 e.Property(s => s.EnterpriseId).HasColumnName("enterprise_id");
-                e.Property(s => s.CollectorId).HasColumnName("collector_id");
-                e.Property(s => s.TeamId).HasColumnName("team_id");
-                e.Property(s => s.JoinTeamAt).HasColumnName("join_team_at");
+                e.Property(s => s.JoinHubAt).HasColumnName("join_hub_at");
 
                 e.HasOne(s => s.User)
                  .WithMany()
@@ -201,18 +203,6 @@ namespace GarbageCollection.DataAccess.Data
                  .WithMany()
                  .HasForeignKey(s => s.EnterpriseId)
                  .OnDelete(DeleteBehavior.Restrict);
-
-                e.HasOne(s => s.Collector)
-                 .WithMany()
-                 .HasForeignKey(s => s.CollectorId)
-                 .OnDelete(DeleteBehavior.SetNull)
-                 .IsRequired(false);
-
-                e.HasOne(s => s.Team)
-                 .WithMany()
-                 .HasForeignKey(s => s.TeamId)
-                 .OnDelete(DeleteBehavior.Restrict)
-                 .IsRequired(false);
             });
 
             // ── WorkArea ──────────────────────────────────────────────────────
@@ -248,6 +238,7 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(x => x.Latitude).HasColumnName("latitude").HasColumnType("decimal(9,6)");
                 e.Property(x => x.Longitude).HasColumnName("longitude").HasColumnType("decimal(9,6)");
                 e.Property(x => x.WorkAreaId).HasColumnName("work_area_id");
+                e.Property(x => x.JoinHubAt).HasColumnName("join_hub_at");
                 e.Property(x => x.CreatedAt).HasColumnName("created_at");
                 e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
@@ -260,10 +251,43 @@ namespace GarbageCollection.DataAccess.Data
                  .IsRequired(false);
             });
 
-            // ── Collector ─────────────────────────────────────────────────────
+            // ── Collector (tổ chức thu gom, entity MỚI) ───────────────────────
             modelBuilder.Entity<Collector>(e =>
             {
-                e.ToTable("collector_hub");
+                e.ToTable("collectors");
+                e.HasKey(c => c.Id);
+
+                e.Property(c => c.Id).HasColumnName("id");
+                e.Property(c => c.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
+                e.Property(c => c.PhoneNumber).HasColumnName("phone_number").IsRequired().HasMaxLength(20);
+                e.Property(c => c.Email).HasColumnName("email").IsRequired().HasMaxLength(320);
+                e.Property(c => c.Address).HasColumnName("address").IsRequired().HasMaxLength(512);
+                e.Property(c => c.Latitude).HasColumnName("latitude").HasColumnType("decimal(9,6)");
+                e.Property(c => c.Longitude).HasColumnName("longitude").HasColumnType("decimal(9,6)");
+                e.Property(c => c.WorkAreaId).HasColumnName("work_area_id");
+                e.Property(c => c.EnterpriseId).HasColumnName("enterprise_id");
+                e.Property(c => c.CreatedAt).HasColumnName("created_at");
+                e.Property(c => c.UpdatedAt).HasColumnName("updated_at");
+
+                e.HasIndex(c => c.Email).IsUnique();
+                e.HasIndex(c => c.EnterpriseId);
+
+                e.HasOne(c => c.Enterprise)
+                 .WithMany()
+                 .HasForeignKey(c => c.EnterpriseId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne(c => c.WorkArea)
+                 .WithMany()
+                 .HasForeignKey(c => c.WorkAreaId)
+                 .OnDelete(DeleteBehavior.SetNull)
+                 .IsRequired(false);
+            });
+
+            // ── CollectorHub (entity MỚI) ─────────────────────────────────────
+            modelBuilder.Entity<CollectorHub>(e =>
+            {
+                e.ToTable("collector_hubs");
                 e.HasKey(c => c.Id);
 
                 e.Property(c => c.Id).HasColumnName("id");
@@ -275,23 +299,50 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(c => c.Longitude).HasColumnName("longitude").HasColumnType("decimal(9,6)");
                 e.Property(c => c.WorkAreaId).HasColumnName("work_area_id");
                 e.Property(c => c.AssignedCapacity).HasColumnName("assigned_capacity");
-                e.Property(c => c.EnterpriseId).HasColumnName("enterprise_id");
                 e.Property(c => c.CreatedAt).HasColumnName("created_at");
                 e.Property(c => c.UpdatedAt).HasColumnName("updated_at");
 
                 e.HasIndex(c => c.Email).IsUnique();
-                e.HasIndex(c => c.EnterpriseId);
-
-                e.HasOne(c => c.Enterprise)
-                 .WithMany()
-                 .HasForeignKey(c => c.EnterpriseId)
-                 .OnDelete(DeleteBehavior.Restrict)
-                 .HasConstraintName("fk_collector_hub_enterprise_id");
 
                 e.HasOne(c => c.WorkArea)
                  .WithMany()
                  .HasForeignKey(c => c.WorkAreaId)
                  .OnDelete(DeleteBehavior.SetNull)
+                 .IsRequired(false);
+            });
+
+            // ── CollectorStaff (entity MỚI) ───────────────────────────────────
+            modelBuilder.Entity<CollectorStaff>(e =>
+            {
+                e.ToTable("collector_staffs");
+                e.HasKey(s => s.UserId);
+
+                e.Property(s => s.UserId).HasColumnName("user_id");
+                e.Property(s => s.CollectorId).HasColumnName("collector_id");
+                e.Property(s => s.CollectorHubId).HasColumnName("collector_hub_id");
+                e.Property(s => s.TeamId).HasColumnName("team_id");
+                e.Property(s => s.JoinTeamAt).HasColumnName("join_team_at");
+
+                e.HasOne(s => s.User)
+                 .WithMany()
+                 .HasForeignKey(s => s.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(s => s.Collector)
+                 .WithMany()
+                 .HasForeignKey(s => s.CollectorId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne(s => s.CollectorHub)
+                 .WithMany()
+                 .HasForeignKey(s => s.CollectorHubId)
+                 .OnDelete(DeleteBehavior.SetNull)
+                 .IsRequired(false);
+
+                e.HasOne(s => s.Team)
+                 .WithMany()
+                 .HasForeignKey(s => s.TeamId)
+                 .OnDelete(DeleteBehavior.Restrict)
                  .IsRequired(false);
             });
 
@@ -305,7 +356,7 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(t => t.Name).HasColumnName("name").IsRequired().HasMaxLength(256);
                 e.Property(t => t.TotalCapacity).HasColumnName("total_capacity").HasColumnType("decimal(10,2)");
                 e.Property(t => t.IsActive).HasColumnName("is_active");
-                e.Property(t => t.CollectorId).HasColumnName("collector_id");
+                e.Property(t => t.CollectorHubId).HasColumnName("collector_hub_id");
                 e.Property(t => t.WorkAreaId).HasColumnName("work_area_id");
                 e.Property(t => t.DispatchTime).HasColumnName("dispatch_time").HasMaxLength(50);
                 e.Property(t => t.RouteOptimized).HasColumnName("route_optimized");
@@ -315,9 +366,9 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(t => t.CreatedAt).HasColumnName("created_at");
                 e.Property(t => t.UpdatedAt).HasColumnName("updated_at");
 
-                e.HasOne(t => t.Collector)
+                e.HasOne(t => t.CollectorHub)
                  .WithMany()
-                 .HasForeignKey(t => t.CollectorId)
+                 .HasForeignKey(t => t.CollectorHubId)
                  .OnDelete(DeleteBehavior.Restrict);
 
                 e.HasOne(t => t.WorkArea)
@@ -346,6 +397,7 @@ namespace GarbageCollection.DataAccess.Data
                 e.Property(u => u.Role).HasColumnName("role").IsRequired().HasMaxLength(64);
                 e.Property(u => u.Address).HasColumnName("address").HasMaxLength(512);
                 e.Property(u => u.WorkAreaId).HasColumnName("work_area_id");
+                e.Property(u => u.TotalPoints).HasColumnName("total_points").HasDefaultValue(0);
                 e.Property(u => u.CreatedAt).HasColumnName("created_at");
                 e.Property(u => u.UpdatedAt).HasColumnName("updated_at");
 
@@ -396,25 +448,30 @@ namespace GarbageCollection.DataAccess.Data
                 e.HasIndex(o => o.Email);
             });
 
-            // ── UserPoints ────────────────────────────────────────────────────
-            modelBuilder.Entity<UserPoints>(e =>
+            // ── PointTransaction ──────────────────────────────────────────────
+            modelBuilder.Entity<PointTransaction>(e =>
             {
-                e.ToTable("user_points");
-                e.HasKey(p => p.UserId);
+                e.ToTable("point_transactions");
+                e.HasKey(p => p.Id);
 
+                e.Property(p => p.Id).HasColumnName("id");
                 e.Property(p => p.UserId).HasColumnName("user_id");
-                e.Property(p => p.WeekPoints).HasColumnName("week_points");
-                e.Property(p => p.MonthPoints).HasColumnName("month_points");
-                e.Property(p => p.YearPoints).HasColumnName("year_points");
-                e.Property(p => p.TotalPoints).HasColumnName("total_points");
-                e.Property(p => p.LeaderboardOptOut).HasColumnName("leaderboard_opt_out");
-                e.Property(p => p.WorkAreaName).HasColumnName("work_area_name").HasMaxLength(256);
-                e.Property(p => p.UpdatedAt).HasColumnName("updated_at");
+                e.Property(p => p.ReportId).HasColumnName("report_id");
+                e.Property(p => p.Points).HasColumnName("points");
+                e.Property(p => p.Type).HasColumnName("type").IsRequired().HasMaxLength(20);
+                e.Property(p => p.Description).HasColumnName("description").HasMaxLength(500);
+                e.Property(p => p.CreatedAt).HasColumnName("created_at");
 
                 e.HasOne(p => p.User)
-                 .WithOne()
-                 .HasForeignKey<UserPoints>(p => p.UserId)
+                 .WithMany()
+                 .HasForeignKey(p => p.UserId)
                  .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(p => p.Report)
+                 .WithMany()
+                 .HasForeignKey(p => p.ReportId)
+                 .OnDelete(DeleteBehavior.SetNull)
+                 .IsRequired(false);
             });
 
 

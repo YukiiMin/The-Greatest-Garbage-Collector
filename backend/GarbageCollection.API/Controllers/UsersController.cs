@@ -161,6 +161,18 @@ namespace GarbageCollection.API.Controllers
         }
 
         /// <summary>
+        /// Danh sách tất cả work areas (Districts + Wards). Public, không cần đăng nhập.
+        /// </summary>
+        [HttpGet("/api/v1/work-areas")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponse<List<WorkAreaDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetWorkAreas()
+        {
+            var areas = await _workAreaService.GetAllAsync();
+            return Ok(ApiResponse<List<WorkAreaDto>>.Success("success", areas));
+        }
+
+        /// <summary>
         /// Đổi mật khẩu. Cấp lại accessToken mới qua cookie sau khi đổi thành công.
         /// </summary>
         [Authorize]

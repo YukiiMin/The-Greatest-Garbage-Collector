@@ -25,6 +25,11 @@ namespace GarbageCollection.DataAccess.Repositories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(e => e.Email.ToLower() == email.ToLower());
 
+        public Task<Enterprise?> GetByWorkAreaIdAsync(Guid workAreaId)
+            => _context.Enterprises
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.WorkAreaId == workAreaId);
+
         public Task<IEnumerable<Enterprise>> GetAllAsync()
             => _context.Enterprises
                 .Include(e => e.WorkArea)

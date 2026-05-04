@@ -6,6 +6,7 @@ namespace GarbageCollection.DataAccess.Interfaces
     {
         Task<Enterprise?> GetByIdAsync(Guid id);
         Task<Enterprise?> GetByEmailAsync(string email);
+        Task<Enterprise?> GetByWorkAreaIdAsync(Guid workAreaId);
         Task<IEnumerable<Enterprise>> GetAllAsync();
         Task<Enterprise> CreateAsync(Enterprise enterprise);
         Task<Enterprise> UpdateAsync(Enterprise enterprise);
